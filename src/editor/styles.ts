@@ -10,7 +10,14 @@ export const BASE_CSS = `
   box-sizing: border-box; cursor: move; user-select: none;
 }
 .sc-object .sc-content { width: 100%; height: 100%; overflow: hidden; pointer-events: none; }
-.sc-object.sc-selected { outline: 1.5px solid #2684ff; outline-offset: 0; }
+.sc-object.sc-selected { outline: 1px dashed rgba(38,132,255,.7); outline-offset: 0; }
+.sc-overlay {
+  position: absolute; inset: 0; pointer-events: none; z-index: 10000;
+  transform-origin: 0 0;
+}
+.sc-overlay > * { position: absolute; top: 0; left: 0; box-sizing: border-box; }
+.sc-selbox { border: 1.5px solid #2684ff; }
+.sc-marquee { border: 1px solid #2684ff; background: rgba(38,132,255,.12); }
 `;
 
 let injected = false;

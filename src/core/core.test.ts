@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Store } from '../editor/store';
-import { aabb } from './transform';
+import { aabb, unionRect, rectsIntersect } from './transform';
 import { createObject } from './model';
 
 describe('Store + History invariants', () => {
@@ -51,5 +51,20 @@ describe('Store + History invariants', () => {
     const box = aabb(o);
     expect(box.w).toBeGreaterThan(100);
     expect(Math.round(box.w)).toBe(Math.round(100 * Math.SQRT2));
+  });
+
+  it('unionRect spans all input rects', () => {
+    const u = unionRect([
+      { x: 10, y: 10, w: 20, h: 20 },
+      { x: 50, y: 5, w: 10, h: 40 },
+    ]);
+    expect(u).toEqual({ x: 10, y: 5, w: 50, h: 40 });
+    expect(unionRect([])).toBeNull();
+  });
+
+  it('rectsIntersect detects overlap and separation (marquee hit-test)', () => {
+    const a = { x: 0, y: 0, w: 100, h: 100 };
+    expect(rectsIntersect(a, { x: 50, y: 50, w: 100, h: 100 })).toBe(true);
+    expect(rectsIntersect(a, { x: 200, y: 0, w: 10, h: 10 })).toBe(false);
   });
 });

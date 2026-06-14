@@ -44,8 +44,41 @@ export function toLocal(p: Point, o: SlideObject): Point {
   return { x: r.x - o.x, y: r.y - o.y };
 }
 
+export interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** Union of several axis-aligned rects; null if the list is empty. */
+export function unionRect(rects: Rect[]): Rect | null {
+  if (!rects.length) return null;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const r of rects) {
+    minX = Math.min(minX, r.x);
+    minY = Math.min(minY, r.y);
+    maxX = Math.max(maxX, r.x + r.w);
+    maxY = Math.max(maxY, r.y + r.h);
+  }
+  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+}
+
+/** True when two axis-aligned rects overlap (touching edges count). */
+export function rectsIntersect(a: Rect, b: Rect): boolean {
+  return (
+    a.x <= b.x + b.w &&
+    a.x + a.w >= b.x &&
+    a.y <= b.y + b.h &&
+    a.y + a.h >= b.y
+  );
+}
+
 /** Axis-aligned bounding box of an object accounting for rotation. */
-export function aabb(o: SlideObject): { x: number; y: number; w: number; h: number } {
+export function aabb(o: SlideObject): Rect {
   const c = center(o);
   const corners: Point[] = [
     { x: o.x, y: o.y },
