@@ -37,6 +37,9 @@ export const BASE_CSS = `
   top: -22px; left: 50%; width: 11px; height: 11px; margin-left: -6px;
   background: #fff; border: 1.5px solid #2684ff; border-radius: 50%; cursor: grab;
 }
+.sc-guide { background: #ff3b6b; }
+.sc-guide-x { width: 1px; top: 0; height: 100%; }
+.sc-guide-y { height: 1px; left: 0; width: 100%; }
 `;
 
 let injected = false;

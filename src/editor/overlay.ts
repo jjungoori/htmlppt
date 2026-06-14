@@ -7,6 +7,7 @@
  */
 import { aabb, unionRect, type Rect } from '../core/transform';
 import { HANDLES } from '../core/manipulate';
+import type { Guide } from '../core/snap';
 import type { SlideObject } from '../core/model';
 import type { Store } from './store';
 
@@ -16,6 +17,7 @@ export class Overlay {
   private readonly rotateHandle: HTMLDivElement;
   private readonly handleEls: HTMLDivElement[] = [];
   private readonly marquee: HTMLDivElement;
+  private readonly guideEls: HTMLDivElement[] = [];
 
   constructor(
     private readonly stage: HTMLElement,
@@ -102,5 +104,27 @@ export class Overlay {
 
   hideMarquee(): void {
     this.marquee.style.display = 'none';
+  }
+
+  /** Draw smart-guide lines (slide space); replaces any previously shown. */
+  showGuides(guides: Guide[]): void {
+    this.hideGuides();
+    for (const g of guides) {
+      const el = document.createElement('div');
+      if (g.axis === 'x') {
+        el.className = 'sc-guide sc-guide-x';
+        el.style.transform = `translateX(${g.pos}px)`;
+      } else {
+        el.className = 'sc-guide sc-guide-y';
+        el.style.transform = `translateY(${g.pos}px)`;
+      }
+      this.layer.appendChild(el);
+      this.guideEls.push(el);
+    }
+  }
+
+  hideGuides(): void {
+    for (const el of this.guideEls) el.remove();
+    this.guideEls.length = 0;
   }
 }

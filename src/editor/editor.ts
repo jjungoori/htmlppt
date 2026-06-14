@@ -4,8 +4,9 @@
  * drag/resize/rotate land in M2–M3.
  */
 import { type SlideDocument } from '../core/model';
-import { aabb, rectsIntersect, type Rect } from '../core/transform';
+import { aabb, rectsIntersect, unionRect, type Rect } from '../core/transform';
 import { computeResize, computeRotate, type Handle } from '../core/manipulate';
+import { computeSnap } from '../core/snap';
 import { Store } from './store';
 import { Renderer } from './renderer';
 import { Overlay } from './overlay';
@@ -93,22 +94,38 @@ export class Editor {
       const o = this.store.find(id)!;
       return { id, x: o.x, y: o.y };
     });
+    const selSet = new Set(ids);
+    // Static targets to align against + the moving selection's union AABB.
+    const targets = this.store.slide.objects
+      .filter((o) => !selSet.has(o.id))
+      .map((o) => aabb(o));
+    const baseRect = unionRect(ids.map((id) => aabb(this.store.find(id)!)))!;
     const key = `move-${++this.dragSeq}`;
     stage.setPointerCapture(down.pointerId);
     let moved = false;
 
     const onMove = (e: PointerEvent) => {
       const p = this.toStage(e);
-      const dx = p.x - start.x;
-      const dy = p.y - start.y;
+      let dx = p.x - start.x;
+      let dy = p.y - start.y;
       if (!moved && Math.abs(dx) + Math.abs(dy) < 3) return;
       moved = true;
+      if (!e.altKey) {
+        const moving: Rect = { x: baseRect.x + dx, y: baseRect.y + dy, w: baseRect.w, h: baseRect.h };
+        const snap = computeSnap(moving, targets, this.store.doc);
+        dx += snap.dx;
+        dy += snap.dy;
+        this.overlay.showGuides(snap.guides);
+      } else {
+        this.overlay.hideGuides();
+      }
       for (const o of origins) this.store.patch(o.id, { x: o.x + dx, y: o.y + dy }, key);
     };
     const onUp = () => {
       stage.releasePointerCapture(down.pointerId);
       stage.removeEventListener('pointermove', onMove);
       stage.removeEventListener('pointerup', onUp);
+      this.overlay.hideGuides();
     };
     stage.addEventListener('pointermove', onMove);
     stage.addEventListener('pointerup', onUp);
