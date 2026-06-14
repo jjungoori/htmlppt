@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Store } from '../editor/store';
 import { aabb, unionRect, rectsIntersect } from './transform';
+import { computeResize, computeRotate } from './manipulate';
 import { createObject } from './model';
 
 describe('Store + History invariants', () => {
@@ -66,5 +67,33 @@ describe('Store + History invariants', () => {
     const a = { x: 0, y: 0, w: 100, h: 100 };
     expect(rectsIntersect(a, { x: 50, y: 50, w: 100, h: 100 })).toBe(true);
     expect(rectsIntersect(a, { x: 200, y: 0, w: 10, h: 10 })).toBe(false);
+  });
+
+  it('computeResize SE handle grows toward the pointer (unrotated)', () => {
+    const o = createObject({ html: '', x: 0, y: 0, w: 100, h: 100 });
+    expect(computeResize(o, 'se', { x: 150, y: 120 })).toEqual({ x: 0, y: 0, w: 150, h: 120 });
+  });
+
+  it('computeResize NW handle keeps the SE corner anchored', () => {
+    const o = createObject({ html: '', x: 0, y: 0, w: 100, h: 100 });
+    const r = computeResize(o, 'nw', { x: -10, y: -20 });
+    expect(r).toEqual({ x: -10, y: -20, w: 110, h: 120 });
+    expect(r.x + r.w).toBe(100); // SE corner unmoved
+    expect(r.y + r.h).toBe(100);
+  });
+
+  it('computeResize holds the anchor fixed even when rotated 90°', () => {
+    const o = createObject({ html: '', x: 0, y: 0, w: 100, h: 100, angle: 90 });
+    const r = computeResize(o, 'se', { x: -60, y: 80 });
+    expect(Math.round(r.x)).toBe(0); // NW anchor in slide space stays put
+    expect(Math.round(r.y)).toBe(0);
+    expect(Math.round(r.w)).toBe(80);
+    expect(Math.round(r.h)).toBe(60);
+  });
+
+  it('computeRotate measures pointer angle around center', () => {
+    const o = createObject({ html: '', x: 0, y: 0, w: 100, h: 100, angle: 0 });
+    expect(computeRotate(o, { x: 50, y: 0 }, { x: 100, y: 50 })).toBeCloseTo(90);
+    expect(computeRotate(o, { x: 50, y: 0 }, { x: 52, y: 0 }, 15) % 15).toBe(0); // snapped
   });
 });

@@ -16,8 +16,27 @@ export const BASE_CSS = `
   transform-origin: 0 0;
 }
 .sc-overlay > * { position: absolute; top: 0; left: 0; box-sizing: border-box; }
-.sc-selbox { border: 1.5px solid #2684ff; }
+.sc-selbox { border: 1.5px solid #2684ff; transform-origin: 0 0; }
 .sc-marquee { border: 1px solid #2684ff; background: rgba(38,132,255,.12); }
+.sc-handle, .sc-rotate { position: absolute; pointer-events: auto; }
+.sc-handle {
+  width: 9px; height: 9px; margin: -5px 0 0 -5px;
+  background: #fff; border: 1.5px solid #2684ff; border-radius: 2px;
+}
+.sc-selbox:not(.sc-has-handles) .sc-handle,
+.sc-selbox:not(.sc-has-handles) .sc-rotate { display: none; }
+.sc-h-nw { top: 0; left: 0; cursor: nwse-resize; }
+.sc-h-n  { top: 0; left: 50%; cursor: ns-resize; }
+.sc-h-ne { top: 0; left: 100%; cursor: nesw-resize; }
+.sc-h-e  { top: 50%; left: 100%; cursor: ew-resize; }
+.sc-h-se { top: 100%; left: 100%; cursor: nwse-resize; }
+.sc-h-s  { top: 100%; left: 50%; cursor: ns-resize; }
+.sc-h-sw { top: 100%; left: 0; cursor: nesw-resize; }
+.sc-h-w  { top: 50%; left: 0; cursor: ew-resize; }
+.sc-rotate {
+  top: -22px; left: 50%; width: 11px; height: 11px; margin-left: -6px;
+  background: #fff; border: 1.5px solid #2684ff; border-radius: 50%; cursor: grab;
+}
 `;
 
 let injected = false;
