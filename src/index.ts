@@ -29,6 +29,24 @@ export {
   type TableData,
 } from './core/tables';
 export {
+  createChart,
+  createChartData,
+  renderChart,
+  parseChart,
+  setValue,
+  addCategory,
+  removeCategory,
+  addSeries,
+  removeSeries,
+  renameSeries,
+  renameCategory,
+  setChartKind,
+  type ChartKind,
+  type ChartSeries,
+  type ChartStyle,
+  type ChartData,
+} from './core/charts';
+export {
   placeImports,
   extractTopLevel,
   importHTMLDocument,

@@ -18,6 +18,15 @@ import {
   type TableData,
   type TableStyle,
 } from '../core/tables';
+import {
+  createChart,
+  parseChart,
+  renderChart,
+  type ChartData,
+  type ChartKind,
+  type ChartSeries,
+  type ChartStyle,
+} from '../core/charts';
 import { aabb, rectsIntersect, unionRect, type Rect } from '../core/transform';
 import { computeResize, computeRotate, type Handle } from '../core/manipulate';
 import { computeSnap } from '../core/snap';
@@ -121,6 +130,32 @@ export class Editor {
     if (!data) return null;
     const next = fn(data);
     this.store.patch(id, { html: renderTable(next) });
+    return next;
+  }
+
+  /** Add a chart object (bar/line/pie) as a manipulable object (M17). */
+  addChart(
+    kind: ChartKind,
+    categories: string[],
+    series: ChartSeries[],
+    style?: ChartStyle,
+    box?: Partial<SlideObject>,
+  ) {
+    return this.store.addObject(createChart(kind, categories, series, style, box));
+  }
+
+  /**
+   * Edit the chart inside object `id`: read its html back into a {@link ChartData}
+   * spec, apply a pure transform, and re-render through the command layer
+   * (undoable). No-op if the object isn't a chart. Returns the new spec (or null).
+   */
+  editChart(id: string, fn: (data: ChartData) => ChartData): ChartData | null {
+    const obj = this.store.find(id);
+    if (!obj) return null;
+    const data = parseChart(obj.html);
+    if (!data) return null;
+    const next = fn(data);
+    this.store.patch(id, { html: renderChart(next) });
     return next;
   }
 
