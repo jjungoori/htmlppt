@@ -44,9 +44,13 @@ export function presentRuntime(sel: string): void {
   var slides = [].slice.call(document.querySelectorAll('body > .sc-slide')) as HTMLElement[];
   if (!slides.length) return;
   var i = 0;
+  var counter = document.createElement('div');
+  counter.className = 'sc-counter';
+  document.body.appendChild(counter);
   function show(n: number) {
     i = Math.max(0, Math.min(slides.length - 1, n));
     for (var k = 0; k < slides.length; k++) slides[k].classList.toggle('sc-current', k === i);
+    counter.textContent = i + 1 + ' / ' + slides.length;
   }
   function next() {
     show(i + 1);
@@ -177,7 +181,9 @@ export function exportHTML(doc: SlideDocument, options: ExportOptions = {}): str
   const presentCss = options.present
     ? `\nbody.sc-present{background:var(--sc-bg);height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center;}
 body.sc-present .sc-slide{display:none;margin:0;}
-body.sc-present .sc-slide.sc-current{display:block;}`
+body.sc-present .sc-slide.sc-current{display:block;}
+.sc-counter{display:none;}
+body.sc-present .sc-counter{display:block;position:fixed;right:12px;bottom:10px;z-index:2147483647;font:600 13px/1 system-ui,sans-serif;color:var(--sc-fg,#888);opacity:.6;pointer-events:none;}`
     : '';
   const presentScript = options.present ? `\n<script>${PRESENT_RUNTIME}</script>` : '';
 

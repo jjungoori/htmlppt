@@ -28,6 +28,15 @@ describe('presentRuntime (M13 embedded controller)', () => {
     expect(current()).toBe('s0');
   });
 
+  it('renders a slide-position counter that tracks navigation', () => {
+    buildDeck(3);
+    presentRuntime(SEL);
+    const counter = document.querySelector('.sc-counter')!;
+    expect(counter.textContent).toBe('1 / 3');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+    expect(counter.textContent).toBe('2 / 3');
+  });
+
   it('advances and rewinds on plain clicks, clamped to bounds', () => {
     buildDeck(2);
     presentRuntime(SEL);
