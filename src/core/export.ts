@@ -144,7 +144,10 @@ function renderObject(o: SlideObject): string {
   // them as a JSON `data-sc-anim` attribute — importDeck parses them back so the
   // round-trip preserves M11 build timelines instead of silently dropping them.
   const anim = o.animations.length ? ` data-sc-anim="${esc(JSON.stringify(o.animations))}"` : '';
-  return `<div class="sc-object"${anim} style="${style}">${o.html}</div>`;
+  // Placeholder key (M21): which master slot this object fills. Only emitted
+  // when set, so non-master decks stay byte-for-byte unchanged.
+  const ph = o.placeholder ? ` data-sc-ph="${esc(o.placeholder)}"` : '';
+  return `<div class="sc-object"${anim}${ph} style="${style}">${o.html}</div>`;
 }
 
 /**
@@ -161,9 +164,18 @@ export function exportHTML(doc: SlideDocument, options: ExportOptions = {}): str
     .join('');
   // Document metadata stamped on <body> so importDeckDocument can losslessly
   // recover canvas size + theme id (CSS px/vars alone are lossy / unparseable).
+  // Slide masters (M21) are structured (shared objects + placeholders), not
+  // expressible as CSS — stamp the whole list as a JSON `data-sc-masters`
+  // attribute so importDeckDocument restores them losslessly. Emitted only when
+  // present, keeping master-free decks byte-for-byte unchanged. The standalone
+  // static output renders each slide's own objects; live composition of the
+  // master layer is `resolveSlideObjects`.
   const meta =
     ` data-sc-width="${doc.width}" data-sc-height="${doc.height}"` +
-    (doc.themeId ? ` data-sc-theme="${esc(doc.themeId)}"` : '');
+    (doc.themeId ? ` data-sc-theme="${esc(doc.themeId)}"` : '') +
+    (doc.masters && doc.masters.length
+      ? ` data-sc-masters="${esc(JSON.stringify(doc.masters))}"`
+      : '');
 
   const slides = doc.slides
     .map((slide) => {
@@ -175,7 +187,9 @@ export function exportHTML(doc: SlideDocument, options: ExportOptions = {}): str
       // importDeckDocument can losslessly recover them. Emitted only when set,
       // keeping note-free decks byte-for-byte unchanged.
       const notes = slide.notes ? `<aside class="sc-notes">${esc(slide.notes)}</aside>` : '';
-      return `<section class="sc-slide">${objects}${notes}</section>`;
+      // Inherited master id (M21), stamped only when set.
+      const master = slide.masterId ? ` data-sc-master="${esc(slide.masterId)}"` : '';
+      return `<section class="sc-slide"${master}>${objects}${notes}</section>`;
     })
     .join('\n');
 

@@ -20,8 +20,10 @@ import {
   createObject,
   createSlide,
   normalizeAnimation,
+  parseDocument,
   type AnimationSpec,
   type SlideDocument,
+  type SlideMaster,
 } from './model';
 
 /** One raw exported object: its inline style + untouched inner HTML. */
@@ -30,6 +32,8 @@ export interface RawDeckObject {
   html: string;
   /** JSON from export's `data-sc-anim` (already attribute-unescaped), if any. */
   anim?: string;
+  /** Placeholder key from export's `data-sc-ph` (M21), if any. */
+  placeholder?: string;
 }
 
 /**
@@ -103,6 +107,7 @@ export function placeDeck(rawSlides: RawDeckObject[][]): ObjectInit[][] {
       const init: ObjectInit = { ...parseObjectStyle(o.style), html: o.html };
       const animations = parseAnimations(o.anim);
       if (animations.length) init.animations = animations;
+      if (o.placeholder) init.placeholder = o.placeholder;
       return init;
     }),
   );
@@ -129,6 +134,7 @@ export function extractDeck(html: string): RawDeckObject[][] {
       style: el.getAttribute('style') ?? '',
       html: (el as HTMLElement).innerHTML,
       anim: el.getAttribute('data-sc-anim') ?? undefined,
+      placeholder: el.getAttribute('data-sc-ph') ?? undefined,
     })),
   );
 }
@@ -160,20 +166,43 @@ export function importDeckDocument(html: string): SlideDocument {
     return Number.isFinite(n) && n > 0 ? n : fallback;
   };
   const themeId = body.getAttribute('data-sc-theme') ?? undefined;
+  const sections = Array.from(body.querySelectorAll(':scope > .sc-slide'));
   // Per-slide speaker notes from the hidden `.sc-notes` aside (M14), aligned by
   // slide order with the extracted objects so the roundtrip is lossless.
-  const notes = Array.from(body.querySelectorAll(':scope > .sc-slide')).map(
+  const notes = sections.map(
     (slide) => slide.querySelector(':scope > .sc-notes')?.textContent ?? '',
   );
+  // Inherited master id per slide (M21), from the section `data-sc-master` stamp.
+  const masterIds = sections.map((slide) => slide.getAttribute('data-sc-master') ?? undefined);
   const initSlides = placeDeck(extractDeck(html));
   const slides = (initSlides.length ? initSlides : [[]]).map((objs, i) =>
-    createSlide({ objects: objs.map(createObject), notes: notes[i] }),
+    createSlide({ objects: objs.map(createObject), notes: notes[i], masterId: masterIds[i] }),
   );
+  // Slide masters (M21) from the body `data-sc-masters` JSON stamp. Run through
+  // parseDocument as a throwaway carrier so each master object is rebuilt/
+  // validated by the same path as document objects; malformed JSON degrades to
+  // no masters rather than throwing.
+  const masters = parseMasters(body.getAttribute('data-sc-masters'));
   return {
     version: 1,
     width: num('data-sc-width', 1280),
     height: num('data-sc-height', 720),
     slides,
     ...(themeId ? { themeId } : {}),
+    ...(masters.length ? { masters } : {}),
   };
+}
+
+/** Parse export's `data-sc-masters` JSON back into validated masters (M21). */
+function parseMasters(json: string | null): SlideMaster[] {
+  if (!json) return [];
+  let raw: unknown;
+  try {
+    raw = JSON.parse(json);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(raw)) return [];
+  // Reuse parseDocument's master validation by wrapping in a minimal doc.
+  return parseDocument({ version: 1, slides: [{ objects: [] }], masters: raw }).masters ?? [];
 }

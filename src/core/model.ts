@@ -36,9 +36,28 @@ export interface SlideObject {
   locked: boolean;
   /** Group membership: objects sharing a non-null groupId select/move together. */
   groupId: ObjectId | null;
+  /**
+   * Placeholder key (M21). When set on a master object it defines an inheritable
+   * slot (e.g. 'title', 'body'); a slide object with the same key *fills* that
+   * slot — it inherits the master placeholder's geometry for any unset fields
+   * and suppresses the master's own placeholder render. Absent = ordinary object.
+   */
+  placeholder?: string;
   /** Arbitrary, untouched user HTML — the "hybrid" content slot. */
   html: string;
   animations: AnimationSpec[];
+}
+
+/**
+ * A reusable slide master (M21): shared background/decoration objects plus
+ * named placeholders that inheriting slides fill. Resolved against a slide by
+ * {@link resolveSlideObjects} in `core/master.ts`.
+ */
+export interface SlideMaster {
+  id: SlideId;
+  name: string;
+  /** Shared objects painted behind every slide that inherits this master. */
+  objects: SlideObject[];
 }
 
 export interface Slide {
@@ -46,6 +65,8 @@ export interface Slide {
   objects: SlideObject[];
   /** Presenter-only speaker notes (M14). Plain text; absent/empty = none. */
   notes?: string;
+  /** Inherited master (M21). References a {@link SlideMaster} id; absent = none. */
+  masterId?: SlideId;
 }
 
 export interface SlideDocument {
@@ -55,6 +76,8 @@ export interface SlideDocument {
   slides: Slide[];
   /** Active theme id (M10). Resolved against built-in themes; absent = default. */
   themeId?: string;
+  /** Reusable slide masters (M21). Slides reference one by `masterId`. */
+  masters?: SlideMaster[];
 }
 
 let _seq = 0;
@@ -77,6 +100,9 @@ export function createObject(partial: Partial<SlideObject> & { html: string }): 
     zIndex: num(partial.zIndex, 0),
     locked: partial.locked ?? false,
     groupId: partial.groupId ?? null,
+    ...(typeof partial.placeholder === 'string' && partial.placeholder
+      ? { placeholder: partial.placeholder }
+      : {}),
     html: partial.html,
     animations: partial.animations ?? [],
   };
@@ -88,6 +114,9 @@ export function createSlide(partial: Partial<Slide> = {}): Slide {
     id: partial.id ?? uid('s'),
     objects: partial.objects ?? [],
     ...(notes ? { notes } : {}),
+    ...(typeof partial.masterId === 'string' && partial.masterId
+      ? { masterId: partial.masterId }
+      : {}),
   };
 }
 
@@ -138,20 +167,48 @@ export function parseDocument(input: unknown): SlideDocument {
     return createSlide({
       id: isObj(rawSlide) && typeof rawSlide.id === 'string' ? rawSlide.id : undefined,
       notes: isObj(rawSlide) && typeof rawSlide.notes === 'string' ? rawSlide.notes : undefined,
-      objects: objects.flatMap((rawObj) => {
-        if (!isObj(rawObj) || typeof rawObj.html !== 'string') return [];
-        const animations = Array.isArray(rawObj.animations)
-          ? rawObj.animations.map(normalizeAnimation).filter((a): a is AnimationSpec => a !== null)
-          : [];
-        return [createObject({ ...(rawObj as Partial<SlideObject>), html: rawObj.html, animations })];
-      }),
+      masterId:
+        isObj(rawSlide) && typeof rawSlide.masterId === 'string' ? rawSlide.masterId : undefined,
+      objects: objects.flatMap(parseObject),
     });
   });
+  const masters = Array.isArray(input.masters)
+    ? input.masters.flatMap((m) => (isObj(m) ? [parseMaster(m)] : []))
+    : [];
   return {
     version: 1,
     width: num(input.width, 1280),
     height: num(input.height, 720),
     slides,
     ...(typeof input.themeId === 'string' ? { themeId: input.themeId } : {}),
+    ...(masters.length ? { masters } : {}),
+  };
+}
+
+/** Rebuild one untrusted object through {@link createObject}; drops invalid. */
+function parseObject(rawObj: unknown): SlideObject[] {
+  if (!isObj(rawObj) || typeof rawObj.html !== 'string') return [];
+  const animations = Array.isArray(rawObj.animations)
+    ? rawObj.animations.map(normalizeAnimation).filter((a): a is AnimationSpec => a !== null)
+    : [];
+  return [createObject({ ...(rawObj as Partial<SlideObject>), html: rawObj.html, animations })];
+}
+
+/** Rebuild one untrusted master (M21), rebuilding each shared object. */
+function parseMaster(raw: Record<string, unknown>): SlideMaster {
+  const objects = Array.isArray(raw.objects) ? raw.objects.flatMap(parseObject) : [];
+  return {
+    id: typeof raw.id === 'string' ? raw.id : uid('m'),
+    name: typeof raw.name === 'string' ? raw.name : 'Master',
+    objects,
+  };
+}
+
+/** Create a {@link SlideMaster} with defaults (M21). */
+export function createMaster(partial: Partial<SlideMaster> = {}): SlideMaster {
+  return {
+    id: partial.id ?? uid('m'),
+    name: partial.name ?? 'Master',
+    objects: partial.objects ?? [],
   };
 }

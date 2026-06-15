@@ -115,6 +115,15 @@ export {
   type MorphSnapshot,
 } from './core/morph';
 export {
+  addMaster,
+  getMaster,
+  masterFromSlide,
+  removeMaster,
+  resolveSlideObjects,
+  setSlideMaster,
+  updateMaster,
+} from './core/master';
+export {
   buildSlideTimeline,
   buildStepCount,
   type BuildStep,

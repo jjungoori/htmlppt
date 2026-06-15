@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { extractDeck, importDeckDocument } from './import-deck';
 import { exportHTML } from './export';
-import { createDocument, createObject } from './model';
+import { createDocument, createMaster, createObject } from './model';
 
 describe('extractDeck', () => {
   it('round-trips a plain exported deck (slide/object counts + html)', () => {
@@ -84,6 +84,28 @@ describe('importDeckDocument', () => {
     // Objects without animations stay clean (no empty stamp emitted).
     expect(exportHTML(doc)).not.toContain('data-sc-anim=""');
     // Re-export is stable.
+    expect(exportHTML(re)).toBe(exportHTML(doc));
+  });
+
+  it('preserves slide masters, masterId and placeholders across the round-trip (M21)', () => {
+    const doc = createDocument(1280, 720);
+    const master = createMaster({
+      id: 'm1',
+      name: 'Base',
+      objects: [createObject({ html: '<div>bg</div>', placeholder: 'title', x: 40, y: 30 })],
+    });
+    doc.masters = [master];
+    doc.slides[0].masterId = 'm1';
+    doc.slides[0].objects.push(createObject({ html: '<h1>Title</h1>', placeholder: 'title' }));
+
+    const re = importDeckDocument(exportHTML(doc));
+    expect(re.masters).toHaveLength(1);
+    expect(re.masters?.[0].objects[0].placeholder).toBe('title');
+    expect(re.slides[0].masterId).toBe('m1');
+    expect(re.slides[0].objects[0].placeholder).toBe('title');
+    // Master-free decks emit no master stamps.
+    expect(exportHTML(createDocument())).not.toContain('data-sc-master');
+    // Re-export is stable (lossless).
     expect(exportHTML(re)).toBe(exportHTML(doc));
   });
 });
