@@ -87,3 +87,63 @@ export function createSlide(partial: Partial<Slide> = {}): Slide {
 export function createDocument(width = 1280, height = 720): SlideDocument {
   return { version: 1, width, height, slides: [createSlide()] };
 }
+
+const ANIMATION_KINDS = new Set<AnimationSpec['kind']>(['enter', 'exit', 'emphasis']);
+
+function isObj(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null;
+}
+
+function num(v: unknown, fallback: number): number {
+  return typeof v === 'number' && Number.isFinite(v) ? v : fallback;
+}
+
+function normalizeAnimation(raw: unknown): AnimationSpec | null {
+  if (!isObj(raw) || typeof raw.preset !== 'string') return null;
+  const kind = ANIMATION_KINDS.has(raw.kind as AnimationSpec['kind'])
+    ? (raw.kind as AnimationSpec['kind'])
+    : 'enter';
+  return {
+    preset: raw.preset,
+    durationMs: num(raw.durationMs, 400),
+    delayMs: num(raw.delayMs, 0),
+    kind,
+  };
+}
+
+/**
+ * Validate and normalize an untrusted value (e.g. parsed file JSON) into a
+ * well-formed {@link SlideDocument}. Every object is rebuilt through
+ * {@link createObject} so missing fields (like `animations`) get defaults
+ * instead of silently breaking downstream consumers. Throws on a shape that
+ * cannot be recovered (not a document / unsupported version / no slides).
+ */
+export function parseDocument(input: unknown): SlideDocument {
+  if (!isObj(input)) throw new Error('parseDocument: input is not an object');
+  if (input.version !== 1) {
+    throw new Error(`parseDocument: unsupported document version ${String(input.version)}`);
+  }
+  if (!Array.isArray(input.slides) || input.slides.length === 0) {
+    throw new Error('parseDocument: document has no slides');
+  }
+  const slides: Slide[] = input.slides.map((rawSlide) => {
+    const objects = isObj(rawSlide) && Array.isArray(rawSlide.objects) ? rawSlide.objects : [];
+    return createSlide({
+      id: isObj(rawSlide) && typeof rawSlide.id === 'string' ? rawSlide.id : undefined,
+      objects: objects.flatMap((rawObj) => {
+        if (!isObj(rawObj) || typeof rawObj.html !== 'string') return [];
+        const animations = Array.isArray(rawObj.animations)
+          ? rawObj.animations.map(normalizeAnimation).filter((a): a is AnimationSpec => a !== null)
+          : [];
+        return [createObject({ ...(rawObj as Partial<SlideObject>), html: rawObj.html, animations })];
+      }),
+    });
+  });
+  return {
+    version: 1,
+    width: num(input.width, 1280),
+    height: num(input.height, 720),
+    slides,
+    ...(typeof input.themeId === 'string' ? { themeId: input.themeId } : {}),
+  };
+}

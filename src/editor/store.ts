@@ -11,6 +11,7 @@ import {
   createDocument,
   createObject,
   createSlide,
+  parseDocument,
   uid,
 } from '../core/model';
 import { History, type Command } from '../core/history';
@@ -517,7 +518,7 @@ export class Store {
   }
 
   fromJSON(doc: SlideDocument): void {
-    this.doc = structuredClone(doc);
+    this.doc = parseDocument(doc);
     this.currentSlideIndex = 0;
     this.setSelection([]);
     this.emit('change');
