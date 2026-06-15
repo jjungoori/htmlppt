@@ -9,6 +9,12 @@ export type { SlideshowOptions } from './editor/slideshow';
 export * from './core/model';
 export * from './core/shapes';
 export {
+  placeImports,
+  extractTopLevel,
+  importHTMLDocument,
+  type ImportLayout,
+} from './core/import';
+export {
   BUILTIN_THEMES,
   DEFAULT_THEME,
   getTheme,

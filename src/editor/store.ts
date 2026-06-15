@@ -81,6 +81,25 @@ export class Store {
     return obj;
   }
 
+  /** Add several objects to the current slide as a single undo entry. */
+  addObjects(inits: (Partial<SlideObject> & { html: string })[]): SlideObject[] {
+    const objs = inits.map((init) => createObject(init));
+    if (!objs.length) return objs;
+    const slide = this.slide;
+    const cmd: Command = {
+      label: 'add objects',
+      apply: () => slide.objects.push(...objs),
+      invert: () => {
+        for (const obj of objs) {
+          const i = slide.objects.indexOf(obj);
+          if (i >= 0) slide.objects.splice(i, 1);
+        }
+      },
+    };
+    this.history.push(cmd);
+    return objs;
+  }
+
   removeObjects(ids: ObjectId[]): void {
     const slide = this.slide;
     const removed = ids

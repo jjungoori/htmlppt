@@ -19,6 +19,7 @@ import { Renderer } from './renderer';
 import { Overlay } from './overlay';
 import { SlidePanel, type SlidePanelOptions } from './panel';
 import { Slideshow, type SlideshowOptions } from './slideshow';
+import { importHTMLDocument, type ImportLayout } from '../core/import';
 import { ensureBaseCss } from './styles';
 
 export interface EditorOptions {
@@ -65,6 +66,18 @@ export class Editor {
   /** Import arbitrary, untouched HTML as a manipulable object. */
   importHTML(html: string, box?: { x?: number; y?: number; w?: number; h?: number }) {
     return this.store.addObject({ html, ...box });
+  }
+
+  /**
+   * Import an arbitrary HTML document/fragment, splitting its top-level elements
+   * into one manipulable object each (markup untouched) and auto-laying them out
+   * in a grid across the slide. Added as a single undo entry; returns the new
+   * objects, which become the selection.
+   */
+  importDocument(html: string, layout?: ImportLayout): SlideObject[] {
+    const objs = this.store.addObjects(importHTMLDocument(html, this.store.doc, layout));
+    if (objs.length) this.store.setSelection(objs.map((o) => o.id));
+    return objs;
   }
 
   /** Add a vector shape (rect/ellipse/triangle/line) as a manipulable object. */
