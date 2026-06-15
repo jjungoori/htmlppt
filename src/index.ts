@@ -152,6 +152,19 @@ export {
   type DeckAdvance,
   type DeckState,
 } from './core/deck';
+export {
+  presenterView,
+  startTimer,
+  createTimer,
+  isRunning,
+  elapsedMs,
+  pauseTimer,
+  resumeTimer,
+  resetTimer,
+  formatElapsed,
+  type PresenterView,
+  type TimerState,
+} from './core/presenter';
 export * as transform from './core/transform';
 export { History } from './core/history';
 export type { Command } from './core/history';
