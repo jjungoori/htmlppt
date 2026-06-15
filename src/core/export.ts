@@ -57,6 +57,15 @@ export function presentRuntime(sel: string): void {
   document.body.classList.add('sc-present');
   show(0);
   document.addEventListener('keydown', function (e) {
+    // Same arbitrary-HTML-preservation principle as the click guard: when focus
+    // is inside an embedded editable field, let Space/arrows type & move the
+    // caret instead of hijacking them into slide navigation.
+    var a = document.activeElement as (HTMLElement & { isContentEditable?: boolean }) | null;
+    if (a) {
+      var tag = a.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || a.isContentEditable)
+        return;
+    }
     switch (e.key) {
       case 'ArrowRight':
       case 'ArrowDown':

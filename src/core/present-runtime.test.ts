@@ -65,6 +65,16 @@ describe('presentRuntime (M13 embedded controller)', () => {
     expect(current()).toBe('s0');
   });
 
+  it('does NOT navigate while typing in an embedded editable field', () => {
+    buildDeck(3);
+    document.getElementById('s0')!.innerHTML = '<input id="field" />';
+    presentRuntime(SEL);
+    document.getElementById('field')!.focus();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+    expect(current()).toBe('s0');
+  });
+
   it('is a no-op when there are no slides', () => {
     presentRuntime(SEL);
     expect(document.body.classList.contains('sc-present')).toBe(false);
