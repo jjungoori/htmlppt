@@ -6,7 +6,9 @@
   "main": "dist/slidecraft.js",
   "module": "dist/slidecraft.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -16,6 +18,7 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "jsdom": "^22.1.0",
     "typescript": "^5.4.0",
     "vite": "^5.2.0",
     "vitest": "^1.6.0"

@@ -79,14 +79,21 @@ export function placeDeck(rawSlides: RawDeckObject[][]): ObjectInit[][] {
 /**
  * Extract each `.sc-slide`'s `.sc-object` boxes (style + untouched innerHTML)
  * from an exported deck string. Browser-only: requires a global `DOMParser`.
+ *
+ * Scoped to *direct* children (`:scope >`): export places slides directly under
+ * `<body>` and objects directly under their slide, while object HTML is the
+ * user's arbitrary markup emitted byte-for-byte — which may itself contain
+ * `.sc-slide`/`.sc-object` (e.g. re-importing a deck whose objects embed
+ * exported markup). A descendant query would mis-detect that nested markup as
+ * spurious top-level slides/objects, so we only walk the structural children.
  */
 export function extractDeck(html: string): RawDeckObject[][] {
   if (typeof DOMParser === 'undefined') {
     throw new Error('extractDeck requires a DOM environment (DOMParser).');
   }
   const parsed = new DOMParser().parseFromString(html, 'text/html');
-  return Array.from(parsed.querySelectorAll('.sc-slide')).map((slide) =>
-    Array.from(slide.querySelectorAll('.sc-object')).map((el) => ({
+  return Array.from(parsed.body.querySelectorAll(':scope > .sc-slide')).map((slide) =>
+    Array.from(slide.querySelectorAll(':scope > .sc-object')).map((el) => ({
       style: el.getAttribute('style') ?? '',
       html: (el as HTMLElement).innerHTML,
     })),
