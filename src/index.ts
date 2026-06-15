@@ -20,6 +20,7 @@ export {
   placeDeck,
   extractDeck,
   importDeck,
+  importDeckDocument,
   type RawDeckObject,
 } from './core/import-deck';
 export {

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { extractDeck } from './import-deck';
+import { extractDeck, importDeckDocument } from './import-deck';
 import { exportHTML } from './export';
 import { createDocument, createObject } from './model';
 
@@ -28,5 +28,30 @@ describe('extractDeck', () => {
     expect(slides).toHaveLength(1);
     expect(slides[0]).toHaveLength(1);
     expect(slides[0][0].html).toBe(nested);
+  });
+});
+
+describe('importDeckDocument', () => {
+  it('losslessly recovers width/height/themeId + objects from an exported deck', () => {
+    const doc = createDocument(1024, 576);
+    doc.themeId = 'dark';
+    doc.slides[0].objects.push(createObject({ html: '<h1>A</h1>', x: 10, y: 20, w: 100, h: 40 }));
+
+    const re = importDeckDocument(exportHTML(doc));
+    expect(re.width).toBe(1024);
+    expect(re.height).toBe(576);
+    expect(re.themeId).toBe('dark');
+    expect(re.slides[0].objects[0]).toMatchObject({ html: '<h1>A</h1>', x: 10, y: 20, w: 100, h: 40 });
+
+    // Re-exporting the re-imported document is stable.
+    expect(exportHTML(re)).toBe(exportHTML(doc));
+  });
+
+  it('falls back to defaults when metadata is absent / untrusted', () => {
+    const re = importDeckDocument('<!doctype html><body><section class="sc-slide"></section></body>');
+    expect(re.width).toBe(1280);
+    expect(re.height).toBe(720);
+    expect(re.themeId).toBeUndefined();
+    expect(re.slides).toHaveLength(1);
   });
 });

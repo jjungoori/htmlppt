@@ -58,6 +58,11 @@ export function exportHTML(doc: SlideDocument, options: ExportOptions = {}): str
   const vars = Object.entries(themeVars(theme))
     .map(([k, v]) => `${k}:${v};`)
     .join('');
+  // Document metadata stamped on <body> so importDeckDocument can losslessly
+  // recover canvas size + theme id (CSS px/vars alone are lossy / unparseable).
+  const meta =
+    ` data-sc-width="${doc.width}" data-sc-height="${doc.height}"` +
+    (doc.themeId ? ` data-sc-theme="${esc(doc.themeId)}"` : '');
 
   const slides = doc.slides
     .map((slide) => {
@@ -82,7 +87,7 @@ body{margin:0;background:var(--sc-bg);font-family:var(--sc-font-body);}
 .sc-object{box-sizing:border-box;}
 </style>
 </head>
-<body>
+<body${meta}>
 ${slides}
 </body>
 </html>`;

@@ -15,6 +15,7 @@
  * {@link extractDeck} is the browser-only DOMParser adapter.
  */
 import type { ObjectInit } from './shapes';
+import { createObject, createSlide, type SlideDocument } from './model';
 
 /** One raw exported object: its inline style + untouched inner HTML. */
 export interface RawDeckObject {
@@ -106,4 +107,36 @@ export function extractDeck(html: string): RawDeckObject[][] {
  */
 export function importDeck(html: string): ObjectInit[][] {
   return placeDeck(extractDeck(html));
+}
+
+/**
+ * Fully re-import a SlideCraft-exported deck into a {@link SlideDocument},
+ * restoring not just per-object transforms but the document-level metadata
+ * (`width`/`height`/`themeId`) that export stamps on `<body data-sc-*>`. This
+ * is the lossless inverse of {@link exportHTML}: `exportHTML(importDeckDocument
+ * (exportHTML(doc)))` is stable. Browser-only (DOMParser); falls back to
+ * `createDocument` defaults for any absent metadata. An empty deck yields one
+ * empty slide so the document satisfies the "at least one slide" invariant.
+ */
+export function importDeckDocument(html: string): SlideDocument {
+  if (typeof DOMParser === 'undefined') {
+    throw new Error('importDeckDocument requires a DOM environment (DOMParser).');
+  }
+  const body = new DOMParser().parseFromString(html, 'text/html').body;
+  const num = (attr: string, fallback: number): number => {
+    const n = Number(body.getAttribute(attr));
+    return Number.isFinite(n) && n > 0 ? n : fallback;
+  };
+  const themeId = body.getAttribute('data-sc-theme') ?? undefined;
+  const initSlides = placeDeck(extractDeck(html));
+  const slides = (initSlides.length ? initSlides : [[]]).map((objs) =>
+    createSlide({ objects: objs.map(createObject) }),
+  );
+  return {
+    version: 1,
+    width: num('data-sc-width', 1280),
+    height: num('data-sc-height', 720),
+    slides,
+    ...(themeId ? { themeId } : {}),
+  };
 }
