@@ -43,7 +43,11 @@ function renderObject(o: SlideObject): string {
     `opacity:${o.opacity}`,
     `z-index:${o.zIndex}`,
   ].join(';');
-  return `<div class="sc-object" style="${style}">${o.html}</div>`;
+  // Animation specs are structured (not expressible via CSS px/vars), so stamp
+  // them as a JSON `data-sc-anim` attribute — importDeck parses them back so the
+  // round-trip preserves M11 build timelines instead of silently dropping them.
+  const anim = o.animations.length ? ` data-sc-anim="${esc(JSON.stringify(o.animations))}"` : '';
+  return `<div class="sc-object"${anim} style="${style}">${o.html}</div>`;
 }
 
 /**

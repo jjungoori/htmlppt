@@ -8,19 +8,45 @@
  * would treat each whole slide section as one grid-placed object, discarding the
  * per-object transforms and the multi-slide structure. This module closes the
  * loop: it reconstructs the slides and each object's `{x,y,w,h,angle,scale,
- * opacity,zIndex}` from the exported markup.
+ * opacity,zIndex}` from the exported markup, plus the object's animation specs
+ * from export's `data-sc-anim` JSON stamp.
  *
  * Two-phase like {@link import}: {@link parseObjectStyle}/{@link placeDeck} are
  * pure (regex over the style strings, unit-testable without a DOM) and
  * {@link extractDeck} is the browser-only DOMParser adapter.
  */
 import type { ObjectInit } from './shapes';
-import { createObject, createSlide, type SlideDocument } from './model';
+import {
+  createObject,
+  createSlide,
+  normalizeAnimation,
+  type AnimationSpec,
+  type SlideDocument,
+} from './model';
 
 /** One raw exported object: its inline style + untouched inner HTML. */
 export interface RawDeckObject {
   style: string;
   html: string;
+  /** JSON from export's `data-sc-anim` (already attribute-unescaped), if any. */
+  anim?: string;
+}
+
+/**
+ * Parse export's `data-sc-anim` JSON back into validated animation specs. Pure
+ * and defensive: any malformed JSON / non-array / bad entry is dropped so a
+ * corrupted attribute can't break re-import. Inverts the `data-sc-anim` stamp.
+ */
+export function parseAnimations(anim: string | undefined): AnimationSpec[] {
+  if (!anim) return [];
+  let raw: unknown;
+  try {
+    raw = JSON.parse(anim);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(raw)) return [];
+  return raw.map(normalizeAnimation).filter((a): a is AnimationSpec => a !== null);
 }
 
 /** Pull the first capture group as a finite number, or `undefined`. */
@@ -73,7 +99,12 @@ export function parseObjectStyle(style: string): Partial<ObjectInit> {
  */
 export function placeDeck(rawSlides: RawDeckObject[][]): ObjectInit[][] {
   return rawSlides.map((objs) =>
-    objs.map((o) => ({ ...parseObjectStyle(o.style), html: o.html })),
+    objs.map((o) => {
+      const init: ObjectInit = { ...parseObjectStyle(o.style), html: o.html };
+      const animations = parseAnimations(o.anim);
+      if (animations.length) init.animations = animations;
+      return init;
+    }),
   );
 }
 
@@ -97,6 +128,7 @@ export function extractDeck(html: string): RawDeckObject[][] {
     Array.from(slide.querySelectorAll(':scope > .sc-object')).map((el) => ({
       style: el.getAttribute('style') ?? '',
       html: (el as HTMLElement).innerHTML,
+      anim: el.getAttribute('data-sc-anim') ?? undefined,
     })),
   );
 }

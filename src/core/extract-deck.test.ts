@@ -54,4 +54,20 @@ describe('importDeckDocument', () => {
     expect(re.themeId).toBeUndefined();
     expect(re.slides).toHaveLength(1);
   });
+
+  it('preserves object animation specs across the round-trip (M11)', () => {
+    const doc = createDocument(1280, 720);
+    const anims = [
+      { preset: 'fade', durationMs: 400, delayMs: 0, kind: 'enter' as const },
+      { preset: 'fly-in', durationMs: 600, delayMs: 100, kind: 'emphasis' as const },
+    ];
+    doc.slides[0].objects.push(createObject({ html: '<h1>A</h1>', animations: anims }));
+
+    const re = importDeckDocument(exportHTML(doc));
+    expect(re.slides[0].objects[0].animations).toEqual(anims);
+    // Objects without animations stay clean (no empty stamp emitted).
+    expect(exportHTML(doc)).not.toContain('data-sc-anim=""');
+    // Re-export is stable.
+    expect(exportHTML(re)).toBe(exportHTML(doc));
+  });
 });

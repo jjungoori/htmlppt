@@ -98,7 +98,7 @@ function num(v: unknown, fallback: number): number {
   return typeof v === 'number' && Number.isFinite(v) ? v : fallback;
 }
 
-function normalizeAnimation(raw: unknown): AnimationSpec | null {
+export function normalizeAnimation(raw: unknown): AnimationSpec | null {
   if (!isObj(raw) || typeof raw.preset !== 'string') return null;
   const kind = ANIMATION_KINDS.has(raw.kind as AnimationSpec['kind'])
     ? (raw.kind as AnimationSpec['kind'])

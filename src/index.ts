@@ -17,6 +17,7 @@ export {
 export { exportHTML, type ExportOptions } from './core/export';
 export {
   parseObjectStyle,
+  parseAnimations,
   placeDeck,
   extractDeck,
   importDeck,
