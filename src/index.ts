@@ -4,6 +4,13 @@ export type { EditorOptions } from './editor/editor';
 export { Store } from './editor/store';
 export * from './core/model';
 export * from './core/shapes';
+export {
+  alignDeltas,
+  distributeDeltas,
+  reorderZ,
+  type AlignEdge,
+  type ZOp,
+} from './core/arrange';
 export * as transform from './core/transform';
 export { History } from './core/history';
 export type { Command } from './core/history';

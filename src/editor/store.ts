@@ -11,6 +11,13 @@ import {
   createObject,
 } from '../core/model';
 import { History, type Command } from '../core/history';
+import {
+  alignDeltas,
+  distributeDeltas,
+  reorderZ,
+  type AlignEdge,
+  type ZOp,
+} from '../core/arrange';
 
 export type StoreEvent = 'change' | 'selection';
 
@@ -126,6 +133,68 @@ export class Store {
       after,
     };
     this.history.push(cmd, coalesceKey != null);
+  }
+
+  /** Apply per-object field changes as one undo entry. */
+  private patchMany(label: string, changes: Map<ObjectId, Partial<SlideObject>>): void {
+    const before = new Map<ObjectId, Partial<SlideObject>>();
+    const after = new Map<ObjectId, Partial<SlideObject>>();
+    for (const [id, ch] of changes) {
+      const obj = this.find(id);
+      if (!obj) continue;
+      const b: Partial<SlideObject> = {};
+      const a: Partial<SlideObject> = {};
+      for (const k of Object.keys(ch) as (keyof SlideObject)[]) {
+        (b as Record<string, unknown>)[k] = obj[k];
+        (a as Record<string, unknown>)[k] = ch[k];
+      }
+      before.set(id, b);
+      after.set(id, a);
+    }
+    if (!after.size) return;
+    const apply = (m: Map<ObjectId, Partial<SlideObject>>) => () => {
+      for (const [id, vals] of m) {
+        const obj = this.find(id);
+        if (obj) Object.assign(obj, vals);
+      }
+    };
+    this.history.push({ label, apply: apply(after), invert: apply(before) });
+  }
+
+  private selectedObjects(): SlideObject[] {
+    return this.slide.objects.filter((o) => this.selection.has(o.id));
+  }
+
+  /** Align selected objects' bounding boxes to a shared edge (M7). */
+  align(edge: AlignEdge): void {
+    const objs = this.selectedObjects();
+    const deltas = alignDeltas(objs, edge);
+    const changes = new Map<ObjectId, Partial<SlideObject>>();
+    for (const o of objs) {
+      const d = deltas.get(o.id);
+      if (d) changes.set(o.id, { x: o.x + d.dx, y: o.y + d.dy });
+    }
+    this.patchMany(`align ${edge}`, changes);
+  }
+
+  /** Distribute selected objects with equal gaps along an axis (M7). */
+  distribute(axis: 'h' | 'v'): void {
+    const objs = this.selectedObjects();
+    const deltas = distributeDeltas(objs, axis);
+    const changes = new Map<ObjectId, Partial<SlideObject>>();
+    for (const o of objs) {
+      const d = deltas.get(o.id);
+      if (d) changes.set(o.id, { x: o.x + d.dx, y: o.y + d.dy });
+    }
+    this.patchMany(`distribute ${axis}`, changes);
+  }
+
+  /** Re-stack selected objects: front / back / forward / backward (M7). */
+  reorder(op: ZOp): void {
+    const z = reorderZ(this.slide.objects, this.selection, op);
+    const changes = new Map<ObjectId, Partial<SlideObject>>();
+    for (const [id, zIndex] of z) changes.set(id, { zIndex });
+    this.patchMany(`z-order ${op}`, changes);
   }
 
   // ---- selection (not part of undo history) ----
