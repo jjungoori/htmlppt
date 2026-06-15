@@ -55,6 +55,22 @@ describe('importDeckDocument', () => {
     expect(re.slides).toHaveLength(1);
   });
 
+  it('preserves speaker notes across the round-trip (M14)', () => {
+    const doc = createDocument(1280, 720);
+    doc.slides[0].notes = 'Open with the <hook> & pause';
+    doc.slides[0].objects.push(createObject({ html: '<h1>A</h1>' }));
+
+    const html = exportHTML(doc);
+    const re = importDeckDocument(html);
+    expect(re.slides[0].notes).toBe('Open with the <hook> & pause');
+    // Notes ship hidden so they never render on the visible slide.
+    expect(html).toContain('.sc-notes{display:none;}');
+    // Note-free slides emit no aside (byte-clean output).
+    expect(exportHTML(createDocument())).not.toContain('sc-notes"');
+    // Re-export is stable.
+    expect(exportHTML(re)).toBe(html);
+  });
+
   it('preserves object animation specs across the round-trip (M11)', () => {
     const doc = createDocument(1280, 720);
     const anims = [

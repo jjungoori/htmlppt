@@ -44,6 +44,8 @@ export interface SlideObject {
 export interface Slide {
   id: SlideId;
   objects: SlideObject[];
+  /** Presenter-only speaker notes (M14). Plain text; absent/empty = none. */
+  notes?: string;
 }
 
 export interface SlideDocument {
@@ -81,7 +83,12 @@ export function createObject(partial: Partial<SlideObject> & { html: string }): 
 }
 
 export function createSlide(partial: Partial<Slide> = {}): Slide {
-  return { id: partial.id ?? uid('s'), objects: partial.objects ?? [] };
+  const notes = typeof partial.notes === 'string' ? partial.notes : '';
+  return {
+    id: partial.id ?? uid('s'),
+    objects: partial.objects ?? [],
+    ...(notes ? { notes } : {}),
+  };
 }
 
 export function createDocument(width = 1280, height = 720): SlideDocument {
@@ -130,6 +137,7 @@ export function parseDocument(input: unknown): SlideDocument {
     const objects = isObj(rawSlide) && Array.isArray(rawSlide.objects) ? rawSlide.objects : [];
     return createSlide({
       id: isObj(rawSlide) && typeof rawSlide.id === 'string' ? rawSlide.id : undefined,
+      notes: isObj(rawSlide) && typeof rawSlide.notes === 'string' ? rawSlide.notes : undefined,
       objects: objects.flatMap((rawObj) => {
         if (!isObj(rawObj) || typeof rawObj.html !== 'string') return [];
         const animations = Array.isArray(rawObj.animations)

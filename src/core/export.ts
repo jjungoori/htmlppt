@@ -171,7 +171,11 @@ export function exportHTML(doc: SlideDocument, options: ExportOptions = {}): str
         .sort((a, b) => a.zIndex - b.zIndex)
         .map(renderObject)
         .join('');
-      return `<section class="sc-slide">${objects}</section>`;
+      // Speaker notes (M14): hidden `.sc-notes` aside carrying plain text so
+      // importDeckDocument can losslessly recover them. Emitted only when set,
+      // keeping note-free decks byte-for-byte unchanged.
+      const notes = slide.notes ? `<aside class="sc-notes">${esc(slide.notes)}</aside>` : '';
+      return `<section class="sc-slide">${objects}${notes}</section>`;
     })
     .join('\n');
 
@@ -197,6 +201,7 @@ body.sc-present .sc-counter{display:block;position:fixed;right:12px;bottom:10px;
 :root{${vars}}
 body{margin:0;background:var(--sc-bg);font-family:var(--sc-font-body);}
 .sc-slide{position:relative;width:${doc.width}px;height:${doc.height}px;margin:24px auto;background:var(--sc-surface);box-shadow:0 2px 16px rgba(0,0,0,.15);overflow:hidden;}
+.sc-notes{display:none;}
 .sc-object{box-sizing:border-box;}${presentCss}
 </style>
 </head>

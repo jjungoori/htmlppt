@@ -160,9 +160,14 @@ export function importDeckDocument(html: string): SlideDocument {
     return Number.isFinite(n) && n > 0 ? n : fallback;
   };
   const themeId = body.getAttribute('data-sc-theme') ?? undefined;
+  // Per-slide speaker notes from the hidden `.sc-notes` aside (M14), aligned by
+  // slide order with the extracted objects so the roundtrip is lossless.
+  const notes = Array.from(body.querySelectorAll(':scope > .sc-slide')).map(
+    (slide) => slide.querySelector(':scope > .sc-notes')?.textContent ?? '',
+  );
   const initSlides = placeDeck(extractDeck(html));
-  const slides = (initSlides.length ? initSlides : [[]]).map((objs) =>
-    createSlide({ objects: objs.map(createObject) }),
+  const slides = (initSlides.length ? initSlides : [[]]).map((objs, i) =>
+    createSlide({ objects: objs.map(createObject), notes: notes[i] }),
   );
   return {
     version: 1,
