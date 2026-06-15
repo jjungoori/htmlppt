@@ -73,6 +73,21 @@ export const BASE_CSS = `
   display: flex; gap: 4px; padding: 6px 8px; border-top: 1px solid #dee2e6;
 }
 .sc-panel-toolbar button { flex: 1; padding: 4px 0; cursor: pointer; }
+
+.sc-show {
+  position: fixed; inset: 0; z-index: 2147483000; background: #000;
+  overflow: hidden; cursor: none; outline: none;
+}
+.sc-show:hover { cursor: default; }
+.sc-show-stage {
+  position: absolute; top: 50%; left: 50%; transform-origin: 50% 50%;
+  overflow: hidden;
+}
+.sc-show-object {
+  position: absolute; top: 0; left: 0; transform-origin: 50% 50%;
+  box-sizing: border-box;
+}
+.sc-show-object .sc-content { width: 100%; height: 100%; overflow: hidden; }
 `;
 
 let injected = false;

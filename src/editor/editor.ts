@@ -18,6 +18,7 @@ import { Store } from './store';
 import { Renderer } from './renderer';
 import { Overlay } from './overlay';
 import { SlidePanel, type SlidePanelOptions } from './panel';
+import { Slideshow, type SlideshowOptions } from './slideshow';
 import { ensureBaseCss } from './styles';
 
 export interface EditorOptions {
@@ -84,6 +85,28 @@ export class Editor {
   /** Mount a live slide-thumbnail panel (M8) into `host`. */
   mountSlidePanel(host: HTMLElement, opts?: SlidePanelOptions): SlidePanel {
     return new SlidePanel(host, this.store, opts);
+  }
+
+  /** Active slideshow, if any (guards against double-launch). */
+  private show: Slideshow | null = null;
+
+  /**
+   * Launch a fullscreen slideshow (M11) from the current slide. Snapshots the
+   * document so playback never mutates the editor's state. Returns the running
+   * {@link Slideshow}; Escape (or running off the end) closes it.
+   */
+  startSlideshow(opts: SlideshowOptions = {}): Slideshow {
+    this.show?.close();
+    if (this.editingId) this.commitEdit();
+    this.show = new Slideshow(this.store.toJSON(), {
+      startIndex: this.store.currentSlideIndex,
+      ...opts,
+      onClose: () => {
+        this.show = null;
+        opts.onClose?.();
+      },
+    });
+    return this.show;
   }
   toJSON(): SlideDocument {
     return this.store.toJSON();
@@ -315,6 +338,11 @@ export class Editor {
   private wireKeyboard(): void {
     window.addEventListener('keydown', (e) => {
       if (this.editingId) return; // inline edit owns the keyboard
+      if (e.key === 'F5') {
+        e.preventDefault();
+        this.startSlideshow();
+        return;
+      }
       const meta = e.ctrlKey || e.metaKey;
       if (meta && e.key.toLowerCase() === 'z' && !e.shiftKey) {
         e.preventDefault();

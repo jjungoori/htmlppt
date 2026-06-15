@@ -4,6 +4,8 @@ export type { EditorOptions } from './editor/editor';
 export { SlidePanel } from './editor/panel';
 export type { SlidePanelOptions } from './editor/panel';
 export { Store } from './editor/store';
+export { Slideshow } from './editor/slideshow';
+export type { SlideshowOptions } from './editor/slideshow';
 export * from './core/model';
 export * from './core/shapes';
 export {
@@ -50,6 +52,17 @@ export {
   type AdvanceResult,
   type PresentationState,
 } from './core/presentation';
+export {
+  createDeck,
+  currentSlide,
+  deckAdvance,
+  deckRetreat,
+  goToSlide,
+  isDeckAtEnd,
+  isDeckAtStart,
+  type DeckAdvance,
+  type DeckState,
+} from './core/deck';
 export * as transform from './core/transform';
 export { History } from './core/history';
 export type { Command } from './core/history';
