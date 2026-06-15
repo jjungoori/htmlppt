@@ -75,6 +75,10 @@ export class Editor {
     return this.store.addObject(createImage(src, box, opts));
   }
 
+  /** Switch the document theme by id (M10). Undoable. */
+  setTheme(id: string): void {
+    this.store.setTheme(id);
+  }
   toJSON(): SlideDocument {
     return this.store.toJSON();
   }

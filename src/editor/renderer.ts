@@ -4,6 +4,7 @@
  */
 import type { SlideObject } from '../core/model';
 import { cssTransform } from '../core/transform';
+import { themeVars } from '../core/theme';
 import type { Store } from './store';
 
 export class Renderer {
@@ -35,6 +36,7 @@ export class Renderer {
     const { doc, slide } = this.store;
     this.stage.style.width = `${doc.width}px`;
     this.stage.style.height = `${doc.height}px`;
+    this.applyTheme();
 
     const live = new Set(slide.objects.map((o) => o.id));
     for (const [id, node] of this.nodes) {
@@ -61,6 +63,17 @@ export class Renderer {
       this.applyBox(node, o);
     }
     this.renderSelection();
+  }
+
+  /** Reflect the document theme onto the stage: CSS vars for opt-in user HTML
+   * plus the stage's own background, default text colour and font. */
+  private applyTheme(): void {
+    const theme = this.store.theme;
+    const vars = themeVars(theme);
+    for (const [k, v] of Object.entries(vars)) this.stage.style.setProperty(k, v);
+    this.stage.style.background = theme.palette.background;
+    this.stage.style.color = theme.palette.text;
+    this.stage.style.fontFamily = theme.fonts.body;
   }
 
   private renderSelection(): void {

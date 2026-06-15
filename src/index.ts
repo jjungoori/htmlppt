@@ -5,6 +5,15 @@ export { Store } from './editor/store';
 export * from './core/model';
 export * from './core/shapes';
 export {
+  BUILTIN_THEMES,
+  DEFAULT_THEME,
+  getTheme,
+  themeVars,
+  type Theme,
+  type ThemePalette,
+  type ThemeFonts,
+} from './core/theme';
+export {
   alignDeltas,
   distributeDeltas,
   reorderZ,

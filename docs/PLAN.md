@@ -34,7 +34,7 @@
 | M7 | z-order / align / 그룹 | ✅ 완료 |
 | M8 | 슬라이드 관리 + 썸네일 | ◐ CRUD/이동/복제 코어 완료, 썸네일 UI 미구현 |
 | M9 | 클립보드/단축키 | ✅ copy/cut/paste + 복제(Ctrl+D)/전체선택(Ctrl+A)/방향키 nudge(+Shift 10px) |
-| M10 | 테마 | ☐ |
+| M10 | 테마 | ✅ 빌트인 4종(light/dark/editorial/mono) + setTheme 언두 + 스테이지 CSS 변수/배경 반영 + 직렬화 |
 | M11 | 애니메이션 + 슬라이드쇼 | ☐ |
 
 ## 에이전트 운용 방침

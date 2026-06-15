@@ -14,6 +14,7 @@ import {
   uid,
 } from '../core/model';
 import { History, type Command } from '../core/history';
+import { type Theme, DEFAULT_THEME, getTheme } from '../core/theme';
 import {
   alignDeltas,
   distributeDeltas,
@@ -39,6 +40,11 @@ export class Store {
   constructor(doc?: SlideDocument) {
     this.doc = doc ?? createDocument();
     this.history.subscribe(() => this.emit('change'));
+  }
+
+  /** The document's resolved theme (falls back to the default). */
+  get theme(): Theme {
+    return (this.doc.themeId && getTheme(this.doc.themeId)) || DEFAULT_THEME;
   }
 
   get slide(): Slide {
@@ -463,6 +469,26 @@ export class Store {
     else next.add(id);
     this.selection = expandToGroups(this.slide.objects, next);
     this.emit('selection');
+  }
+
+  // ---- theme (M10) ----
+
+  /** Switch the document theme by id, as a single undo entry. Unknown ids are
+   * ignored. Theme changes are document-wide, not selection-scoped. */
+  setTheme(id: string): void {
+    if (!getTheme(id)) return;
+    const before = this.doc.themeId;
+    if (before === id) return;
+    const cmd: Command = {
+      label: 'set theme',
+      apply: () => {
+        this.doc.themeId = id;
+      },
+      invert: () => {
+        this.doc.themeId = before;
+      },
+    };
+    this.history.push(cmd);
   }
 
   // ---- serialization ----

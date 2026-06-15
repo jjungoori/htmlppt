@@ -51,6 +51,8 @@ export interface SlideDocument {
   width: number;
   height: number;
   slides: Slide[];
+  /** Active theme id (M10). Resolved against built-in themes; absent = default. */
+  themeId?: string;
 }
 
 let _seq = 0;
