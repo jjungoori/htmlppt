@@ -3,6 +3,8 @@ import { Editor } from './index';
 
 const editor = new Editor(document.getElementById('editor')!, { width: 1280, height: 720 });
 editor.mountSlidePanel(document.getElementById('panel')!);
+editor.mountToolbar(document.getElementById('shellbar')!);
+editor.mountProperties(document.getElementById('props')!);
 
 const samples = [
   `<h1 style="margin:0;color:#1c7ed6;font:700 32px system-ui">제목 슬라이드</h1>`,

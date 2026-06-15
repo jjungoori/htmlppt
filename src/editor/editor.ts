@@ -18,6 +18,8 @@ import { Store } from './store';
 import { Renderer } from './renderer';
 import { Overlay } from './overlay';
 import { SlidePanel, type SlidePanelOptions } from './panel';
+import { Toolbar, type ToolbarOptions } from './toolbar';
+import { PropertyPanel } from './properties';
 import { Slideshow, type SlideshowOptions } from './slideshow';
 import { importHTMLDocument, type ImportLayout } from '../core/import';
 import { ensureBaseCss } from './styles';
@@ -98,6 +100,16 @@ export class Editor {
   /** Mount a live slide-thumbnail panel (M8) into `host`. */
   mountSlidePanel(host: HTMLElement, opts?: SlidePanelOptions): SlidePanel {
     return new SlidePanel(host, this.store, opts);
+  }
+
+  /** Mount the command toolbar (M15) into `host`. */
+  mountToolbar(host: HTMLElement, opts?: ToolbarOptions): Toolbar {
+    return new Toolbar(host, this, opts);
+  }
+
+  /** Mount the selection property inspector (M15) into `host`. */
+  mountProperties(host: HTMLElement): PropertyPanel {
+    return new PropertyPanel(host, this.store);
   }
 
   /** Active slideshow, if any (guards against double-launch). */

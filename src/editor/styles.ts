@@ -74,6 +74,32 @@ export const BASE_CSS = `
 }
 .sc-panel-toolbar button { flex: 1; padding: 4px 0; cursor: pointer; }
 
+.sc-toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 3px;
+  padding: 6px 8px; background: #f1f3f5; border-bottom: 1px solid #dee2e6;
+}
+.sc-toolbar button {
+  min-width: 28px; height: 28px; padding: 0 6px; cursor: pointer;
+  background: #fff; border: 1px solid #ced4da; border-radius: 4px;
+  font: 14px system-ui;
+}
+.sc-toolbar button:hover { background: #e7f5ff; border-color: #74c0fc; }
+.sc-toolbar-sep { width: 1px; height: 20px; margin: 0 4px; background: #ced4da; }
+
+.sc-props {
+  display: flex; flex-direction: column; gap: 10px; padding: 10px;
+  background: #f8f9fa; border-left: 1px solid #dee2e6; box-sizing: border-box;
+}
+.sc-props-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sc-props-field {
+  display: flex; flex-direction: column; gap: 2px; font: 11px system-ui; color: #495057;
+}
+.sc-props-field input, .sc-props-field select {
+  padding: 4px 6px; border: 1px solid #ced4da; border-radius: 4px; font: 13px system-ui;
+}
+.sc-props-field input:disabled { background: #e9ecef; color: #adb5bd; }
+.sc-props-theme { grid-column: 1 / -1; }
+
 .sc-show {
   position: fixed; inset: 0; z-index: 2147483000; background: #000;
   overflow: hidden; cursor: none; outline: none;
