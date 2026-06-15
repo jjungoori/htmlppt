@@ -16,6 +16,21 @@ describe('Store + History invariants', () => {
     expect(s.slide.objects.length).toBe(1);
   });
 
+  it('fromJSON clears history so undo cannot revert into the old document', () => {
+    const s = new Store();
+    s.addObject({ html: '<b>a</b>', x: 0, y: 0 });
+    const snapshot = s.toJSON();
+    s.addObject({ html: '<b>b</b>', x: 0, y: 0 });
+    expect(s.history.canUndo()).toBe(true);
+
+    s.fromJSON(snapshot);
+    expect(s.history.canUndo()).toBe(false);
+    expect(s.history.canRedo()).toBe(false);
+    const count = s.slide.objects.length;
+    s.history.undo(); // no-op — must not mutate the freshly loaded doc
+    expect(s.slide.objects.length).toBe(count);
+  });
+
   it('patch is undoable and restores prior values', () => {
     const s = new Store();
     const o = s.addObject({ html: 'x', x: 0, y: 0 });

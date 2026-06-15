@@ -519,6 +519,10 @@ export class Store {
 
   fromJSON(doc: SlideDocument): void {
     this.doc = parseDocument(doc);
+    // Loading a fresh document invalidates the old undo/redo stack — its
+    // commands reference objects that no longer exist. Clear it so Ctrl+Z
+    // can't revert into the previous project.
+    this.history.clear();
     this.currentSlideIndex = 0;
     this.setSelection([]);
     this.emit('change');

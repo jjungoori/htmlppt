@@ -35,6 +35,13 @@ export class History {
     this.emit();
   }
 
+  /** Drop all undo/redo entries — e.g. after loading a fresh document. */
+  clear(): void {
+    this.undoStack.length = 0;
+    this.redoStack.length = 0;
+    this.emit();
+  }
+
   canUndo(): boolean {
     return this.undoStack.length > 0;
   }
