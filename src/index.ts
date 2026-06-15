@@ -47,6 +47,23 @@ export {
   type ChartData,
 } from './core/charts';
 export {
+  createConnector,
+  createConnectorData,
+  renderConnector,
+  routeConnector,
+  parseConnector,
+  anchorPoint,
+  setRouting,
+  setSide,
+  setArrows,
+  setStyle,
+  type AnchorSide,
+  type ConnectorRouting,
+  type ConnectorEnd,
+  type ConnectorStyle,
+  type ConnectorData,
+} from './core/connectors';
+export {
   placeImports,
   extractTopLevel,
   importHTMLDocument,

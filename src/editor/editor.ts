@@ -27,6 +27,17 @@ import {
   type ChartSeries,
   type ChartStyle,
 } from '../core/charts';
+import {
+  createConnector,
+  createConnectorData,
+  parseConnector,
+  renderConnector,
+  routeConnector,
+  type AnchorSide,
+  type ConnectorData,
+  type ConnectorRouting,
+  type ConnectorStyle,
+} from '../core/connectors';
 import { aabb, rectsIntersect, unionRect, type Rect } from '../core/transform';
 import { computeResize, computeRotate, type Handle } from '../core/manipulate';
 import { computeSnap } from '../core/snap';
@@ -159,6 +170,73 @@ export class Editor {
     return next;
   }
 
+  /**
+   * Add a connector (M18) anchoring object `fromId` to object `toId`. Routes
+   * between their current boxes and adds the line as a manipulable object.
+   * No-op (returns null) if either endpoint is missing.
+   */
+  addConnector(
+    fromId: string,
+    toId: string,
+    opts: {
+      fromSide?: AnchorSide;
+      toSide?: AnchorSide;
+      routing?: ConnectorRouting;
+      arrowStart?: boolean;
+      arrowEnd?: boolean;
+      style?: ConnectorStyle;
+    } = {},
+    box?: Partial<SlideObject>,
+  ): SlideObject | null {
+    const from = this.store.find(fromId);
+    const to = this.store.find(toId);
+    if (!from || !to) return null;
+    const data = createConnectorData(fromId, toId, opts);
+    return this.store.addObject(createConnector(data, aabb(from), aabb(to), box));
+  }
+
+  /**
+   * Edit the connector inside object `id`: read its spec back, apply a pure
+   * transform, re-route from the current endpoint boxes, and re-render through
+   * the command layer (undoable). No-op if `id` isn't a connector or an endpoint
+   * is missing. Returns the new spec (or null).
+   */
+  editConnector(id: string, fn: (data: ConnectorData) => ConnectorData): ConnectorData | null {
+    const obj = this.store.find(id);
+    if (!obj) return null;
+    const data = parseConnector(obj.html);
+    if (!data) return null;
+    const next = fn(data);
+    if (!this.reroute(id, next)) return null;
+    return next;
+  }
+
+  /**
+   * Re-route every connector whose endpoints still exist to follow the current
+   * object boxes (M18 auto-tracking). Called after a move/resize. Coalesces into
+   * the given undo key, if any.
+   */
+  reflowConnectors(key?: string): void {
+    for (const o of this.store.slide.objects.slice()) {
+      const data = parseConnector(o.html);
+      if (data) this.reroute(o.id, data, key);
+    }
+  }
+
+  /** Route `data` from its current endpoints and patch object `id`. */
+  private reroute(id: string, data: ConnectorData, key?: string): boolean {
+    const from = this.store.find(data.from.ref);
+    const to = this.store.find(data.to.ref);
+    if (!from || !to) return false;
+    const { points, bbox } = routeConnector(data, aabb(from), aabb(to));
+    this.store.patch(
+      id,
+      { x: bbox.x, y: bbox.y, w: bbox.w, h: bbox.h, html: renderConnector(data, points, bbox) },
+      key,
+    );
+    return true;
+  }
+
   /** Switch the document theme by id (M10). Undoable. */
   setTheme(id: string): void {
     this.store.setTheme(id);
@@ -272,6 +350,7 @@ export class Editor {
         this.overlay.hideGuides();
       }
       for (const o of origins) this.store.patch(o.id, { x: o.x + dx, y: o.y + dy }, key);
+      this.reflowConnectors(key);
     };
     const onUp = () => {
       stage.releasePointerCapture(down.pointerId);
@@ -305,6 +384,7 @@ export class Editor {
     const onMove = (e: PointerEvent) => {
       const next = computeResize(o0, handle, this.toStage(e));
       this.store.patch(id, next, key);
+      this.reflowConnectors(key);
     };
     const onUp = () => {
       layer.releasePointerCapture(down.pointerId);
