@@ -32,6 +32,13 @@ export {
   type AnimationKind,
   type ResolvedAnimation,
 } from './core/animate';
+export {
+  buildSlideTimeline,
+  buildStepCount,
+  type BuildStep,
+  type SlideTimeline,
+  type TimelineEntry,
+} from './core/slideshow';
 export * as transform from './core/transform';
 export { History } from './core/history';
 export type { Command } from './core/history';
