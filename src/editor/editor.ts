@@ -32,10 +32,13 @@ export class Editor {
     this.overlay = new Overlay(this.renderer.stage, this.store);
     this.wireSelection();
     this.wireManipulation();
+    this.wireTextEdit();
     this.wireKeyboard();
   }
 
   private dragSeq = 0;
+  /** Id of the object currently in inline text-edit, or null. */
+  private editingId: string | null = null;
 
   /** Pointer position in slide-space coordinates. */
   private toStage(e: PointerEvent): { x: number; y: number } {
@@ -71,6 +74,13 @@ export class Editor {
   private wireSelection(): void {
     const stage = this.renderer.stage;
     stage.addEventListener('pointerdown', (e) => {
+      // While editing text, let pointer events inside the edited object reach
+      // the caret untouched; a press elsewhere just commits and falls through.
+      if (this.editingId) {
+        const within = (e.target as HTMLElement).closest('.sc-object') as HTMLElement | null;
+        if (within?.dataset.id === this.editingId) return;
+        this.commitEdit();
+      }
       const target = (e.target as HTMLElement).closest('.sc-object') as HTMLElement | null;
       if (target) {
         const id = target.dataset.id!;
@@ -215,8 +225,69 @@ export class Editor {
     stage.addEventListener('pointerup', onUp);
   }
 
+  /** Double-click an object to edit its HTML content inline (M5). */
+  private wireTextEdit(): void {
+    this.renderer.stage.addEventListener('dblclick', (e) => {
+      const target = (e.target as HTMLElement).closest('.sc-object') as HTMLElement | null;
+      if (!target) return;
+      const o = this.store.find(target.dataset.id!);
+      if (o && !o.locked) this.enterEdit(o.id);
+    });
+  }
+
+  /** Cached teardown for the active edit session, set by enterEdit. */
+  private editFinish: ((commit: boolean) => void) | null = null;
+
+  private enterEdit(id: string): void {
+    if (this.editingId) this.commitEdit();
+    const node = this.renderer.nodeFor(id);
+    const content = node?.querySelector('.sc-content') as HTMLElement | null;
+    if (!node || !content) return;
+    const before = this.store.find(id)!.html;
+    this.editingId = id;
+    this.store.setSelection([id]);
+    node.classList.add('sc-editing');
+    content.contentEditable = 'true';
+    content.focus();
+
+    const finish = (commit: boolean): void => {
+      if (this.editingId !== id) return;
+      content.removeEventListener('blur', onBlur);
+      content.removeEventListener('keydown', onKey);
+      content.contentEditable = 'false';
+      node.classList.remove('sc-editing');
+      this.editingId = null;
+      this.editFinish = null;
+      const html = content.innerHTML;
+      if (commit && html !== before) {
+        // dataset.html still holds `before`, so renderer re-injects on change.
+        this.store.patch(id, { html });
+      } else if (!commit) {
+        content.innerHTML = before; // revert
+      }
+    };
+    const onBlur = (): void => finish(true);
+    const onKey = (e: KeyboardEvent): void => {
+      // Keep typing local: don't leak to global undo/redo/delete shortcuts.
+      e.stopPropagation();
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        finish(false);
+      }
+    };
+    content.addEventListener('blur', onBlur);
+    content.addEventListener('keydown', onKey);
+    this.editFinish = finish;
+  }
+
+  /** Commit the in-progress edit, if any. */
+  private commitEdit(): void {
+    this.editFinish?.(true);
+  }
+
   private wireKeyboard(): void {
     window.addEventListener('keydown', (e) => {
+      if (this.editingId) return; // inline edit owns the keyboard
       const meta = e.ctrlKey || e.metaKey;
       if (meta && e.key.toLowerCase() === 'z' && !e.shiftKey) {
         e.preventDefault();

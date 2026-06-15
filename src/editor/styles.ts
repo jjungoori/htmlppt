@@ -11,6 +11,11 @@ export const BASE_CSS = `
 }
 .sc-object .sc-content { width: 100%; height: 100%; overflow: hidden; pointer-events: none; }
 .sc-object.sc-selected { outline: 1px dashed rgba(38,132,255,.7); outline-offset: 0; }
+.sc-object.sc-editing { cursor: text; user-select: text; }
+.sc-object.sc-editing .sc-content {
+  pointer-events: auto; user-select: text; overflow: auto;
+  outline: 2px solid #2684ff; outline-offset: 0; cursor: text;
+}
 .sc-overlay {
   position: absolute; inset: 0; pointer-events: none; z-index: 10000;
   transform-origin: 0 0;

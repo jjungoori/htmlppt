@@ -26,6 +26,17 @@ describe('Store + History invariants', () => {
     expect(s.find(o.id)!.y).toBe(0);
   });
 
+  it('inline text edit (html patch) is undoable', () => {
+    const s = new Store();
+    const o = s.addObject({ html: '<p>old</p>', x: 0, y: 0 });
+    s.patch(o.id, { html: '<p>new</p>' });
+    expect(s.find(o.id)!.html).toBe('<p>new</p>');
+    s.history.undo();
+    expect(s.find(o.id)!.html).toBe('<p>old</p>');
+    s.history.redo();
+    expect(s.find(o.id)!.html).toBe('<p>new</p>');
+  });
+
   it('coalesced drag patches collapse into one undo entry', () => {
     const s = new Store();
     const o = s.addObject({ html: 'x', x: 0, y: 0 });
