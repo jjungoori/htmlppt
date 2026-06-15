@@ -19,7 +19,48 @@ export interface ExportOptions {
   title?: string;
   /** Override the resolved theme. Default: doc.themeId → built-in → default. */
   theme?: Theme;
+  /**
+   * Embed a self-contained presentation runtime so the exported file is
+   * navigable as a slideshow (arrows/space/PageDn advance, Esc exits, F
+   * toggles browser fullscreen). Default `false` keeps the static stacked
+   * layout (and the M12 round-trip byte output) unchanged.
+   */
+  present?: boolean;
 }
+
+/**
+ * Vanilla, dependency-free presentation controller, inlined verbatim into the
+ * export when `present` is set. Lives outside the SlideCraft model so the
+ * exported file runs anywhere with zero runtime deps; reads only the DOM the
+ * exporter emits (`.sc-slide` sections under `<body>`).
+ */
+const PRESENT_RUNTIME = `
+(function(){
+  var slides=[].slice.call(document.querySelectorAll('body > .sc-slide'));
+  if(!slides.length)return;
+  var i=0;
+  function show(n){i=Math.max(0,Math.min(slides.length-1,n));
+    for(var k=0;k<slides.length;k++)slides[k].classList.toggle('sc-current',k===i);}
+  function next(){show(i+1);}function prev(){show(i-1);}
+  document.body.classList.add('sc-present');
+  show(0);
+  document.addEventListener('keydown',function(e){
+    switch(e.key){
+      case 'ArrowRight':case 'ArrowDown':case 'PageDown':case ' ':next();e.preventDefault();break;
+      case 'ArrowLeft':case 'ArrowUp':case 'PageUp':prev();e.preventDefault();break;
+      case 'Home':show(0);break;case 'End':show(slides.length-1);break;
+      case 'f':case 'F':
+        if(document.fullscreenElement)document.exitFullscreen();
+        else if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen();
+        break;
+      case 'Escape':
+        if(document.fullscreenElement)document.exitFullscreen();
+        else document.body.classList.remove('sc-present');
+        break;
+    }
+  });
+  document.addEventListener('click',function(e){if(e.button===0)next();});
+})();`;
 
 /** Minimal HTML-attribute/text escaper for the few values we interpolate. */
 function esc(s: string): string {
@@ -78,6 +119,16 @@ export function exportHTML(doc: SlideDocument, options: ExportOptions = {}): str
     })
     .join('\n');
 
+  // Present mode: show only the `.sc-current` slide, centered and scaled to the
+  // viewport. Purely additive CSS so the static (non-present) layout is byte-for
+  // -byte unchanged when `present` is off.
+  const presentCss = options.present
+    ? `\nbody.sc-present{background:var(--sc-bg);height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+body.sc-present .sc-slide{display:none;margin:0;}
+body.sc-present .sc-slide.sc-current{display:block;}`
+    : '';
+  const presentScript = options.present ? `\n<script>${PRESENT_RUNTIME}</script>` : '';
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -88,11 +139,11 @@ export function exportHTML(doc: SlideDocument, options: ExportOptions = {}): str
 :root{${vars}}
 body{margin:0;background:var(--sc-bg);font-family:var(--sc-font-body);}
 .sc-slide{position:relative;width:${doc.width}px;height:${doc.height}px;margin:24px auto;background:var(--sc-surface);box-shadow:0 2px 16px rgba(0,0,0,.15);overflow:hidden;}
-.sc-object{box-sizing:border-box;}
+.sc-object{box-sizing:border-box;}${presentCss}
 </style>
 </head>
 <body${meta}>
-${slides}
+${slides}${presentScript}
 </body>
 </html>`;
 }

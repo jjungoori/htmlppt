@@ -37,6 +37,7 @@
 | M10 | 테마 | ✅ 빌트인 4종(light/dark/editorial/mono) + setTheme 언두 + 스테이지 CSS 변수/배경 반영 + 직렬화 |
 | M11 | 애니메이션 + 슬라이드쇼 | ✅ 애니 엔진(preset→WAAPI)+슬라이드 빌드 타임라인+슬라이드별 재생 컨트롤러+덱 네비(deck.ts)+풀스크린 슬라이드쇼 DOM 드라이버(F5/클릭/방향키/Esc) |
 | M12 | HTML 내보내기(라운드트립) | ✅ 순수 `exportHTML(doc)` — 덱→자립형 standalone HTML(슬라이드별 스테이지·공유 transform 컨벤션·z-index 정렬·테마 CSS 변수·객체 HTML 무변형) |
+| M13 | 발표 가능한 내보내기 | ✅ `exportHTML(doc, {present:true})` — 의존성 0 인라인 슬라이드쇼 런타임(방향키/Space/PageDn 진행·Esc 종료·F 풀스크린·클릭 advance) + `.sc-current` 단일 슬라이드 표시 CSS. `present` 기본 false라 M12 정적 출력·라운드트립 무변경 |
 
 ## 에이전트 운용 방침
 

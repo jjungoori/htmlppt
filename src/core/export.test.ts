@@ -82,4 +82,27 @@ describe('exportHTML', () => {
       angle: 15, scaleX: 1.5, scaleY: 2, opacity: 0.5, zIndex: 7,
     });
   });
+
+  it('omits the presentation runtime by default (M12 static layout)', () => {
+    const html = exportHTML(docWith(createObject({ html: '<p>x</p>' })));
+    expect(html).not.toContain('<script>');
+    expect(html).not.toContain('sc-present');
+  });
+
+  it('embeds a self-contained slideshow runtime when present:true', () => {
+    const html = exportHTML(docWith(createObject({ html: '<p>x</p>' })), { present: true });
+    expect(html).toContain('<script>');
+    expect(html).toContain('sc-present');
+    expect(html).toContain('sc-current');
+    // No external dependency is referenced — the runtime is fully inlined.
+    expect(html).not.toMatch(/<script[^>]+src=/);
+  });
+
+  it('present runtime does not disturb object HTML or round-trip parsing', () => {
+    const o = createObject({ html: '<h1>Title</h1>', x: 10, y: 20, w: 100, h: 40 });
+    const html = exportHTML(docWith(o), { present: true });
+    expect(html).toContain('<h1>Title</h1>');
+    const m = /<div class="sc-object"[^>]*style="([^"]*)"/.exec(html);
+    expect(parseObjectStyle(m![1])).toMatchObject({ x: 10, y: 20, w: 100, h: 40 });
+  });
 });
