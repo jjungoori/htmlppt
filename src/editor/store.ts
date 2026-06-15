@@ -393,7 +393,64 @@ export class Store {
     return pasted;
   }
 
+  /**
+   * Clone the current selection in place (fresh ids, group membership remapped),
+   * nudged by `offset` px, as a single undo entry. Unlike copy+paste this never
+   * touches the clipboard. The new copies become the selection.
+   */
+  duplicate(offset = 16): SlideObject[] {
+    const objs = this.selectedObjects();
+    if (!objs.length) return [];
+    const groupRemap = new Map<ObjectId, ObjectId>();
+    const copies = objs.map((src) => {
+      let groupId = src.groupId;
+      if (groupId != null) {
+        let next = groupRemap.get(groupId);
+        if (!next) {
+          next = uid('g');
+          groupRemap.set(groupId, next);
+        }
+        groupId = next;
+      }
+      return createObject({
+        ...structuredClone(src),
+        id: uid('o'),
+        x: src.x + offset,
+        y: src.y + offset,
+        groupId,
+      });
+    });
+    const slide = this.slide;
+    const cmd: Command = {
+      label: 'duplicate',
+      apply: () => slide.objects.push(...copies),
+      invert: () => {
+        for (const obj of copies) {
+          const i = slide.objects.indexOf(obj);
+          if (i >= 0) slide.objects.splice(i, 1);
+        }
+      },
+    };
+    this.history.push(cmd);
+    this.setSelection(copies.map((o) => o.id));
+    return copies;
+  }
+
+  /** Move the selection by (dx, dy) px as one undo entry (arrow-key nudge). */
+  nudge(dx: number, dy: number): void {
+    const objs = this.selectedObjects();
+    if (!objs.length || (dx === 0 && dy === 0)) return;
+    const changes = new Map<ObjectId, Partial<SlideObject>>();
+    for (const o of objs) changes.set(o.id, { x: o.x + dx, y: o.y + dy });
+    this.patchMany('nudge', changes);
+  }
+
   // ---- selection (not part of undo history) ----
+
+  /** Select every object on the current slide. */
+  selectAll(): void {
+    this.setSelection(this.slide.objects.map((o) => o.id));
+  }
 
   setSelection(ids: ObjectId[]): void {
     this.selection = expandToGroups(this.slide.objects, ids);

@@ -327,9 +327,21 @@ export class Editor {
       } else if (meta && e.key.toLowerCase() === 'v') {
         e.preventDefault();
         this.store.paste();
+      } else if (meta && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        this.store.duplicate();
+      } else if (meta && e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+        this.store.selectAll();
       } else if ((e.key === 'Delete' || e.key === 'Backspace') && this.store.selection.size) {
         e.preventDefault();
         this.store.removeObjects([...this.store.selection]);
+      } else if (e.key.startsWith('Arrow') && this.store.selection.size) {
+        e.preventDefault();
+        const step = e.shiftKey ? 10 : 1;
+        const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
+        const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
+        this.store.nudge(dx, dy);
       }
     });
   }
