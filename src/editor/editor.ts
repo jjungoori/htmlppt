@@ -38,6 +38,13 @@ import {
   type ConnectorRouting,
   type ConnectorStyle,
 } from '../core/connectors';
+import {
+  createPath,
+  parsePath,
+  booleanPath,
+  type PathData,
+  type BooleanOp,
+} from '../core/path';
 import { aabb, rectsIntersect, unionRect, type Rect } from '../core/transform';
 import { computeResize, computeRotate, type Handle } from '../core/manipulate';
 import { computeSnap } from '../core/snap';
@@ -235,6 +242,48 @@ export class Editor {
       key,
     );
     return true;
+  }
+
+  /** Add an editable path object (M19) as a manipulable object. */
+  addPath(data: PathData, box?: Partial<SlideObject>): SlideObject {
+    return this.store.addObject(createPath(data, box));
+  }
+
+  /**
+   * Edit the path inside object `id`: read its spec back, apply a pure point
+   * transform, re-fit the object box to the new bbox, and re-render through the
+   * command layer (undoable). No-op if `id` isn't a path. Returns the new spec.
+   */
+  editPath(id: string, fn: (data: PathData) => PathData): PathData | null {
+    const obj = this.store.find(id);
+    if (!obj) return null;
+    const data = parsePath(obj.html);
+    if (!data) return null;
+    const next = fn(data);
+    const init = createPath(next);
+    this.store.patch(id, { x: init.x, y: init.y, w: init.w, h: init.h, html: init.html });
+    return next;
+  }
+
+  /**
+   * Merge two path objects with a boolean op (union/intersection/difference,
+   * M19). Reads both specs (which already share slide-space coordinates), runs
+   * the pure {@link booleanPath}, then — through the command layer — removes the
+   * operands and adds the result ring(s) in a single undo step. Returns the new
+   * object id(s), or an empty array if `idA`/`idB` aren't paths or the op yields
+   * nothing.
+   */
+  mergeShapes(idA: string, idB: string, op: BooleanOp): string[] {
+    const a = this.store.find(idA);
+    const b = this.store.find(idB);
+    if (!a || !b) return [];
+    const da = parsePath(a.html);
+    const db = parsePath(b.html);
+    if (!da || !db) return [];
+    const rings = booleanPath(da, db, op);
+    if (rings.length === 0) return [];
+    const added = this.store.replaceObjects([idA, idB], rings.map((r) => createPath(r)));
+    return added.map((o) => o.id);
   }
 
   /** Switch the document theme by id (M10). Undoable. */

@@ -124,6 +124,47 @@ export class Store {
     return objs;
   }
 
+  /**
+   * Remove some objects and add others as a single undo entry (e.g. boolean
+   * merge in M19: drop the operands, insert the result rings). Returns the new
+   * objects. No-op if nothing would change.
+   */
+  replaceObjects(
+    removeIds: ObjectId[],
+    inits: (Partial<SlideObject> & { html: string })[],
+  ): SlideObject[] {
+    const slide = this.slide;
+    const removed = removeIds
+      .map((id) => {
+        const obj = slide.objects.find((o) => o.id === id);
+        return obj ? { obj, index: slide.objects.indexOf(obj) } : null;
+      })
+      .filter((x): x is { obj: SlideObject; index: number } => !!x)
+      .sort((a, b) => a.index - b.index);
+    const added = inits.map((init) => createObject(init));
+    if (!removed.length && !added.length) return added;
+    const cmd: Command = {
+      label: 'replace objects',
+      apply: () => {
+        for (const { obj } of removed) {
+          const i = slide.objects.indexOf(obj);
+          if (i >= 0) slide.objects.splice(i, 1);
+        }
+        slide.objects.push(...added);
+      },
+      invert: () => {
+        for (const obj of added) {
+          const i = slide.objects.indexOf(obj);
+          if (i >= 0) slide.objects.splice(i, 1);
+        }
+        for (const { obj, index } of removed) slide.objects.splice(index, 0, obj);
+      },
+    };
+    this.history.push(cmd);
+    this.setSelection([]);
+    return added;
+  }
+
   removeObjects(ids: ObjectId[]): void {
     const slide = this.slide;
     const removed = ids
