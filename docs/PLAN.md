@@ -49,7 +49,7 @@
 | # | 마일스톤 | 범위 | 상태 |
 |---|---|---|---|
 | M15 | 에디터 UI 셸 | 툴바(도형/텍스트/이미지 삽입·정렬·분배·z-order·그룹·undo/redo 버튼) + 속성 패널(위치/크기/회전/불투명도/테마) + 슬라이드 썸네일 레일 통합. 데모를 "실제 편집기"로. | ✅ `Toolbar`(`mountToolbar`)·`PropertyPanel`(`mountProperties`) — 모든 동작이 커맨드 레이어(Store) 경유로 undo 가능, 속성 패널은 단일 선택 반영+coalesce patch. 데모(index.html/main.ts) 통합. 애니메이션 편집 UI는 후속(엔진은 M11에 존재) |
-| M16 | 표(Table) 객체 | 행/열 추가·삭제, 셀 인라인 텍스트 편집, 셀 병합, export/import 라운드트립 | ⬜ 미착수 |
+| M16 | 표(Table) 객체 | 행/열 추가·삭제, 셀 인라인 텍스트 편집, 셀 병합, export/import 라운드트립 | ✅ `core/tables.ts` — 순수 `TableData` 격자 모델 + `renderTable`/순수 편집 op(addRow/deleteRow/addColumn/deleteColumn/setCellText/mergeCells/splitCell, 병합은 covered 플래그로 사각 격자 유지·경계 가로지르는 merge는 자동 unspan) + 브라우저 전용 `parseTable`(DOMParser, colspan/rowspan→covered 복원). 표는 `<table>` html을 가진 일반 객체라 문서 라운드트립은 자동 무손실. `Editor.addTable`/`editTable`(parse→순수변형→`store.patch({html})`로 커맨드 레이어 경유·undo). render→parse 라운드트립 포함 14테스트 |
 | M17 | 차트 객체 | 막대/선/원형 기본 차트(데이터 모델→SVG 렌더), 데이터 편집, 라운드트립 | ⬜ 미착수 |
 | M18 | 커넥터/연결선 | 객체 간 anchor 연결선, 객체 이동 시 자동 추적, 화살표 스타일 | ⬜ 미착수 |
 | M19 | 도형 병합·점 편집 | merge shapes(합/차/교집합) + edit points(베지어 정점 편집) | ⬜ 미착수 |

@@ -12,6 +12,23 @@ export type { SlideshowOptions } from './editor/slideshow';
 export * from './core/model';
 export * from './core/shapes';
 export {
+  createTable,
+  createTableData,
+  renderTable,
+  parseTable,
+  columnCount,
+  addRow,
+  deleteRow,
+  addColumn,
+  deleteColumn,
+  setCellText,
+  mergeCells,
+  splitCell,
+  type TableCell,
+  type TableStyle,
+  type TableData,
+} from './core/tables';
+export {
   placeImports,
   extractTopLevel,
   importHTMLDocument,

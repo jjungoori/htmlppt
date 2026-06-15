@@ -11,6 +11,13 @@ import {
   type ShapeStyle,
   type ImageOptions,
 } from '../core/shapes';
+import {
+  createTable,
+  parseTable,
+  renderTable,
+  type TableData,
+  type TableStyle,
+} from '../core/tables';
 import { aabb, rectsIntersect, unionRect, type Rect } from '../core/transform';
 import { computeResize, computeRotate, type Handle } from '../core/manipulate';
 import { computeSnap } from '../core/snap';
@@ -90,6 +97,31 @@ export class Editor {
   /** Add an image (URL or data URI) as a manipulable object. */
   addImage(src: string, box?: Partial<SlideObject>, opts?: ImageOptions) {
     return this.store.addObject(createImage(src, box, opts));
+  }
+
+  /** Add a table object (rows×cols) as a manipulable object (M16). */
+  addTable(
+    rows = 3,
+    cols = 3,
+    opts?: { headerRow?: boolean; style?: TableStyle },
+    box?: Partial<SlideObject>,
+  ) {
+    return this.store.addObject(createTable(rows, cols, opts, box));
+  }
+
+  /**
+   * Edit the table inside object `id`: read its html back into a grid, apply a
+   * pure transform, and re-render through the command layer (undoable). No-op if
+   * the object isn't a table. Returns the new {@link TableData} (or null).
+   */
+  editTable(id: string, fn: (data: TableData) => TableData): TableData | null {
+    const obj = this.store.find(id);
+    if (!obj) return null;
+    const data = parseTable(obj.html);
+    if (!data) return null;
+    const next = fn(data);
+    this.store.patch(id, { html: renderTable(next) });
+    return next;
   }
 
   /** Switch the document theme by id (M10). Undoable. */
