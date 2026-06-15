@@ -28,39 +28,82 @@ export interface ExportOptions {
   present?: boolean;
 }
 
+/** Selector for content the click-to-advance handler must NOT hijack. */
+const INTERACTIVE_SELECTOR =
+  'a[href],button,input,select,textarea,label,summary,[contenteditable],[contenteditable="true"]';
+
 /**
- * Vanilla, dependency-free presentation controller, inlined verbatim into the
- * export when `present` is set. Lives outside the SlideCraft model so the
- * exported file runs anywhere with zero runtime deps; reads only the DOM the
- * exporter emits (`.sc-slide` sections under `<body>`).
+ * Vanilla, dependency-free presentation controller, inlined into the export when
+ * `present` is set. Lives outside the SlideCraft model so the exported file runs
+ * anywhere with zero runtime deps; reads only the DOM the exporter emits
+ * (`.sc-slide` sections under `<body>`). Defined as a real function (embedded via
+ * {@link Function.prototype.toString}) so it can be exercised in unit tests
+ * instead of living as an opaque string.
  */
-const PRESENT_RUNTIME = `
-(function(){
-  var slides=[].slice.call(document.querySelectorAll('body > .sc-slide'));
-  if(!slides.length)return;
-  var i=0;
-  function show(n){i=Math.max(0,Math.min(slides.length-1,n));
-    for(var k=0;k<slides.length;k++)slides[k].classList.toggle('sc-current',k===i);}
-  function next(){show(i+1);}function prev(){show(i-1);}
+export function presentRuntime(sel: string): void {
+  var slides = [].slice.call(document.querySelectorAll('body > .sc-slide')) as HTMLElement[];
+  if (!slides.length) return;
+  var i = 0;
+  function show(n: number) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    for (var k = 0; k < slides.length; k++) slides[k].classList.toggle('sc-current', k === i);
+  }
+  function next() {
+    show(i + 1);
+  }
+  function prev() {
+    show(i - 1);
+  }
   document.body.classList.add('sc-present');
   show(0);
-  document.addEventListener('keydown',function(e){
-    switch(e.key){
-      case 'ArrowRight':case 'ArrowDown':case 'PageDown':case ' ':next();e.preventDefault();break;
-      case 'ArrowLeft':case 'ArrowUp':case 'PageUp':prev();e.preventDefault();break;
-      case 'Home':show(0);break;case 'End':show(slides.length-1);break;
-      case 'f':case 'F':
-        if(document.fullscreenElement)document.exitFullscreen();
-        else if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen();
+  document.addEventListener('keydown', function (e) {
+    switch (e.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+      case 'PageDown':
+      case ' ':
+        next();
+        e.preventDefault();
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+      case 'PageUp':
+        prev();
+        e.preventDefault();
+        break;
+      case 'Home':
+        show(0);
+        break;
+      case 'End':
+        show(slides.length - 1);
+        break;
+      case 'f':
+      case 'F':
+        if (document.fullscreenElement) document.exitFullscreen();
+        else if (document.documentElement.requestFullscreen)
+          document.documentElement.requestFullscreen();
         break;
       case 'Escape':
-        if(document.fullscreenElement)document.exitFullscreen();
+        if (document.fullscreenElement) document.exitFullscreen();
         else document.body.classList.remove('sc-present');
         break;
     }
   });
-  document.addEventListener('click',function(e){if(e.button===0)next();});
-})();`;
+  document.addEventListener('click', function (e) {
+    if (e.button !== 0) return;
+    // The whole point of SlideCraft is preserving arbitrary HTML — don't hijack
+    // clicks on interactive content (links/buttons/form fields) into a slide
+    // advance, and don't advance while the user is selecting text.
+    var t = e.target as Element | null;
+    if (t && t.closest && t.closest(sel)) return;
+    var selection = document.getSelection && document.getSelection();
+    if (selection && String(selection).length) return;
+    next();
+  });
+}
+
+/** Source of {@link presentRuntime}, inlined and self-invoked in the export. */
+const PRESENT_RUNTIME = `(${presentRuntime.toString()})(${JSON.stringify(INTERACTIVE_SELECTOR)});`;
 
 /** Minimal HTML-attribute/text escaper for the few values we interpolate. */
 function esc(s: string): string {

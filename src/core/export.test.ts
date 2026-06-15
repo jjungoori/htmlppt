@@ -96,6 +96,9 @@ describe('exportHTML', () => {
     expect(html).toContain('sc-current');
     // No external dependency is referenced — the runtime is fully inlined.
     expect(html).not.toMatch(/<script[^>]+src=/);
+    // Click-to-advance must guard interactive content so embedded links/buttons
+    // (arbitrary user HTML) stay functional instead of being hijacked.
+    expect(html).toContain('a[href]');
   });
 
   it('present runtime does not disturb object HTML or round-trip parsing', () => {
