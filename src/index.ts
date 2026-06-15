@@ -165,6 +165,11 @@ export {
   type PresenterView,
   type TimerState,
 } from './core/presenter';
+export {
+  gestureFromPointers,
+  applyGesture,
+  type Gesture,
+} from './core/gesture';
 export * as transform from './core/transform';
 export { History } from './core/history';
 export type { Command } from './core/history';
