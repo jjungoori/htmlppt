@@ -59,6 +59,28 @@ describe('parseDocument', () => {
     expect(anims[0]).toEqual({ preset: 'fade', durationMs: 400, delayMs: 0, kind: 'enter' });
   });
 
+  it('coerces non-finite object numeric fields to defaults', () => {
+    const out = parseDocument({
+      version: 1,
+      width: 1280,
+      height: 720,
+      slides: [
+        {
+          id: 's1',
+          objects: [
+            { html: '<p>x</p>', x: NaN, y: Infinity, w: -Infinity, opacity: 'foo', zIndex: null },
+          ],
+        },
+      ],
+    });
+    const obj = out.slides[0].objects[0];
+    expect(obj.x).toBe(0);
+    expect(obj.y).toBe(0);
+    expect(obj.w).toBe(200);
+    expect(obj.opacity).toBe(1);
+    expect(obj.zIndex).toBe(0);
+  });
+
   it('throws on non-object, wrong version, or no slides', () => {
     expect(() => parseDocument(null)).toThrow();
     expect(() => parseDocument({ version: 2, slides: [{}] })).toThrow(/version/);
