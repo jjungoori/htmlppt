@@ -40,7 +40,30 @@ export class Store {
 
   constructor(doc?: SlideDocument) {
     this.doc = doc ?? createDocument();
-    this.history.subscribe(() => this.emit('change'));
+    this.history.subscribe(() => {
+      // Undo/redo (and structural slide commands) can remove the very objects
+      // the selection points at — e.g. redoing a delete re-runs apply() without
+      // touching selection, leaving stale ids that no longer exist on the
+      // current slide. Prune the selection to what actually exists so the
+      // overlay and selection-scoped ops never reference ghost objects.
+      this.pruneSelection();
+      this.emit('change');
+    });
+  }
+
+  /** Drop selection ids that aren't present on the current slide. Emits a
+   * 'selection' event only when something was actually removed. */
+  private pruneSelection(): void {
+    if (!this.selection.size) return;
+    const live = new Set(this.slide.objects.map((o) => o.id));
+    let changed = false;
+    for (const id of this.selection) {
+      if (!live.has(id)) {
+        this.selection.delete(id);
+        changed = true;
+      }
+    }
+    if (changed) this.emit('selection');
   }
 
   /** The document's resolved theme (falls back to the default). */

@@ -160,4 +160,30 @@ describe('grouping (M7)', () => {
     expect(s.find(a.id)!.groupId).toBeNull();
     expect(s.find(b.id)!.groupId).toBeNull();
   });
+
+  it('prunes stale selection when redo re-deletes the selected objects', () => {
+    const s = new Store();
+    const a = s.addObject({ html: 'a' });
+    s.setSelection([a.id]);
+    s.removeObjects([a.id]); // clears selection at delete time
+    s.history.undo(); // object back
+    s.setSelection([a.id]); // re-select the restored object
+    s.history.redo(); // re-deletes a — selection must not keep the ghost id
+    expect(s.slide.objects.length).toBe(0);
+    expect(s.selection.has(a.id)).toBe(false);
+  });
+
+  it('drops selection that belongs to a slide hidden by undo', () => {
+    const s = new Store();
+    const a = s.addObject({ html: 'a' });
+    s.setSelection([a.id]);
+    s.duplicateSlide(); // moves to the new slide (selection cleared)
+    s.setCurrentSlide(0);
+    s.setSelection([a.id]);
+    s.history.undo(); // removes the duplicated slide; index clamps, stays on 0
+    expect(s.selection.has(a.id)).toBe(true); // a still lives on slide 0
+    s.history.redo();
+    s.setCurrentSlide(1); // duplicated slide back, switch clears selection
+    expect(s.selection.has(a.id)).toBe(false);
+  });
 });
