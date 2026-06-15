@@ -331,6 +331,68 @@ export class Store {
     this.history.push(cmd);
   }
 
+  // ---- clipboard (M9) ----
+
+  /** Detached snapshots of the last copied/cut objects, in paint order. */
+  private clipboard: SlideObject[] = [];
+
+  /** Snapshot the current selection into the clipboard (deep copies). */
+  copy(): void {
+    const objs = this.selectedObjects();
+    if (!objs.length) return;
+    this.clipboard = objs.map((o) => structuredClone(o));
+  }
+
+  /** Copy then remove the selection in one shot. */
+  cut(): void {
+    if (!this.selection.size) return;
+    this.copy();
+    this.removeObjects([...this.selection]);
+  }
+
+  /**
+   * Insert the clipboard onto the current slide with fresh ids, nudged by
+   * `offset` px so copies don't sit exactly on the originals. Group membership
+   * is preserved among pasted objects (remapped to fresh groupIds). The newly
+   * pasted objects become the selection. Single undoable entry.
+   */
+  paste(offset = 16): SlideObject[] {
+    if (!this.clipboard.length) return [];
+    const groupRemap = new Map<ObjectId, ObjectId>();
+    const pasted = this.clipboard.map((src) => {
+      let groupId = src.groupId;
+      if (groupId != null) {
+        let next = groupRemap.get(groupId);
+        if (!next) {
+          next = uid('g');
+          groupRemap.set(groupId, next);
+        }
+        groupId = next;
+      }
+      return createObject({
+        ...src,
+        id: uid('o'),
+        x: src.x + offset,
+        y: src.y + offset,
+        groupId,
+      });
+    });
+    const slide = this.slide;
+    const cmd: Command = {
+      label: 'paste',
+      apply: () => slide.objects.push(...pasted),
+      invert: () => {
+        for (const obj of pasted) {
+          const i = slide.objects.indexOf(obj);
+          if (i >= 0) slide.objects.splice(i, 1);
+        }
+      },
+    };
+    this.history.push(cmd);
+    this.setSelection(pasted.map((o) => o.id));
+    return pasted;
+  }
+
   // ---- selection (not part of undo history) ----
 
   setSelection(ids: ObjectId[]): void {

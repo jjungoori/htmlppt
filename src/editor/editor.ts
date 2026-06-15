@@ -318,6 +318,15 @@ export class Editor {
       } else if (meta && e.key.toLowerCase() === 'g') {
         e.preventDefault();
         this.store.group();
+      } else if (meta && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        this.store.copy();
+      } else if (meta && e.key.toLowerCase() === 'x') {
+        e.preventDefault();
+        this.store.cut();
+      } else if (meta && e.key.toLowerCase() === 'v') {
+        e.preventDefault();
+        this.store.paste();
       } else if ((e.key === 'Delete' || e.key === 'Backspace') && this.store.selection.size) {
         e.preventDefault();
         this.store.removeObjects([...this.store.selection]);
