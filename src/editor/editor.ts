@@ -17,6 +17,7 @@ import { computeSnap } from '../core/snap';
 import { Store } from './store';
 import { Renderer } from './renderer';
 import { Overlay } from './overlay';
+import { SlidePanel, type SlidePanelOptions } from './panel';
 import { ensureBaseCss } from './styles';
 
 export interface EditorOptions {
@@ -78,6 +79,11 @@ export class Editor {
   /** Switch the document theme by id (M10). Undoable. */
   setTheme(id: string): void {
     this.store.setTheme(id);
+  }
+
+  /** Mount a live slide-thumbnail panel (M8) into `host`. */
+  mountSlidePanel(host: HTMLElement, opts?: SlidePanelOptions): SlidePanel {
+    return new SlidePanel(host, this.store, opts);
   }
   toJSON(): SlideDocument {
     return this.store.toJSON();

@@ -1,6 +1,8 @@
 /** SlideCraft public entry. */
 export { Editor } from './editor/editor';
 export type { EditorOptions } from './editor/editor';
+export { SlidePanel } from './editor/panel';
+export type { SlidePanelOptions } from './editor/panel';
 export { Store } from './editor/store';
 export * from './core/model';
 export * from './core/shapes';

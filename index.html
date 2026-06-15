@@ -8,7 +8,9 @@
       body { margin: 0; font-family: system-ui, sans-serif; }
       #toolbar { padding: 8px 12px; background: #212529; color: #fff; display: flex; gap: 8px; align-items: center; }
       #toolbar button { padding: 4px 10px; cursor: pointer; }
-      #editor { height: calc(100vh - 45px); }
+      #workspace { display: flex; height: calc(100vh - 45px); }
+      #panel { width: 200px; flex: none; }
+      #editor { flex: 1; min-width: 0; height: 100%; }
     </style>
   </head>
   <body>
@@ -20,7 +22,10 @@
       <button id="save">toJSON → console</button>
       <span style="opacity:.7">클릭=선택, Shift+클릭=다중, Del=삭제, Ctrl+Z/Y</span>
     </div>
-    <div id="editor"></div>
+    <div id="workspace">
+      <div id="panel"></div>
+      <div id="editor"></div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
