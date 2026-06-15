@@ -6,9 +6,39 @@
   "main": "dist/slidecraft.js",
   "module": "dist/slidecraft.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/slidecraft.js"
+    }
+  },
+  "sideEffects": false,
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
+  "keywords": [
+    "powerpoint",
+    "slides",
+    "presentation",
+    "deck",
+    "html",
+    "editor",
+    "direct-manipulation",
+    "wysiwyg"
+  ],
+  "homepage": "https://github.com/jjungoori/htmlppt#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jjungoori/htmlppt.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jjungoori/htmlppt/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
