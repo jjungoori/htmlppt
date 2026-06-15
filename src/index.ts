@@ -178,6 +178,25 @@ export {
   type SpatialGrid,
 } from './core/culling';
 export {
+  pathBBox,
+  polygonArea,
+  pathD,
+  renderPath,
+  createPath,
+  translatePath,
+  moveNode,
+  setNodeHandle,
+  addNode,
+  deleteNode,
+  booleanPath,
+  parsePath,
+  type Pt,
+  type PathNode,
+  type PathStyle,
+  type PathData,
+  type BooleanOp,
+} from './core/path';
+export {
   objectAriaLabel,
   objectAriaAttrs,
   tabOrder,
