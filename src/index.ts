@@ -106,6 +106,15 @@ export {
   type ResolvedAnimation,
 } from './core/animate';
 export {
+  MORPH_DURATION_MS,
+  morphFrame,
+  morphKeyframes,
+  planMorph,
+  type MorphPair,
+  type MorphPlan,
+  type MorphSnapshot,
+} from './core/morph';
+export {
   buildSlideTimeline,
   buildStepCount,
   type BuildStep,
