@@ -3,6 +3,7 @@ import { exportHTML } from './export';
 import { createDocument, createObject, createSlide } from './model';
 import { cssTransform } from './transform';
 import { getTheme } from './theme';
+import { parseObjectStyle } from './import-deck';
 
 function docWith(...objects: ReturnType<typeof createObject>[]) {
   const doc = createDocument(800, 600);
@@ -63,5 +64,22 @@ describe('exportHTML', () => {
     const html = exportHTML(doc);
     expect((html.match(/class="sc-object"/g) ?? []).length).toBe(3);
     expect((html.match(/class="sc-slide"/g) ?? []).length).toBe(2);
+  });
+
+  // Guards against silent format drift between export's renderObject and
+  // import-deck's parseObjectStyle — drives the REAL export output through the
+  // inverse parser instead of a hand-rebuilt style string (DOM-free).
+  it('geometry survives a real export -> parseObjectStyle round-trip', () => {
+    const o = createObject({
+      html: '<p>x</p>', x: -12.5, y: 34, w: 100, h: 40,
+      angle: 15, scaleX: 1.5, scaleY: 2, opacity: 0.5, zIndex: 7,
+    });
+    const html = exportHTML(docWith(o));
+    const m = /<div class="sc-object" style="([^"]*)"/.exec(html);
+    expect(m).not.toBeNull();
+    expect(parseObjectStyle(m![1])).toEqual({
+      x: -12.5, y: 34, w: 100, h: 40,
+      angle: 15, scaleX: 1.5, scaleY: 2, opacity: 0.5, zIndex: 7,
+    });
   });
 });
