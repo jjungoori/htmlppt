@@ -16,6 +16,13 @@ export {
 } from './core/import';
 export { exportHTML, type ExportOptions } from './core/export';
 export {
+  parseObjectStyle,
+  placeDeck,
+  extractDeck,
+  importDeck,
+  type RawDeckObject,
+} from './core/import-deck';
+export {
   BUILTIN_THEMES,
   DEFAULT_THEME,
   getTheme,

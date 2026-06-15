@@ -1,5 +1,5 @@
 /**
- * Standalone HTML export (round-trip with {@link importHTMLDocument}).
+ * Standalone HTML export (round-trip with {@link importDeck}).
  *
  * SlideCraft imports arbitrary HTML into a transform model; this module does the
  * reverse — serialize a {@link SlideDocument} back into a self-contained HTML
