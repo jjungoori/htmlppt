@@ -34,6 +34,8 @@ export interface SlideObject {
   /** paint order within the slide; higher = front. */
   zIndex: number;
   locked: boolean;
+  /** Group membership: objects sharing a non-null groupId select/move together. */
+  groupId: ObjectId | null;
   /** Arbitrary, untouched user HTML — the "hybrid" content slot. */
   html: string;
   animations: AnimationSpec[];
@@ -70,6 +72,7 @@ export function createObject(partial: Partial<SlideObject> & { html: string }): 
     opacity: partial.opacity ?? 1,
     zIndex: partial.zIndex ?? 0,
     locked: partial.locked ?? false,
+    groupId: partial.groupId ?? null,
     html: partial.html,
     animations: partial.animations ?? [],
   };

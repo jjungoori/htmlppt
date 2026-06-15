@@ -312,6 +312,12 @@ export class Editor {
       } else if (meta && (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))) {
         e.preventDefault();
         this.redo();
+      } else if (meta && e.key.toLowerCase() === 'g' && e.shiftKey) {
+        e.preventDefault();
+        this.store.ungroup();
+      } else if (meta && e.key.toLowerCase() === 'g') {
+        e.preventDefault();
+        this.store.group();
       } else if ((e.key === 'Delete' || e.key === 'Backspace') && this.store.selection.size) {
         e.preventDefault();
         this.store.removeObjects([...this.store.selection]);

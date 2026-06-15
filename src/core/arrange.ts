@@ -10,6 +10,26 @@ import { aabb, unionRect } from './transform';
 export type AlignEdge = 'left' | 'hcenter' | 'right' | 'top' | 'vcenter' | 'bottom';
 export type ZOp = 'front' | 'back' | 'forward' | 'backward';
 
+/**
+ * Expand a raw id set so selecting any grouped object pulls in every sibling
+ * sharing its groupId. Ungrouped ids pass through unchanged. Pure — the store
+ * calls this whenever the selection changes.
+ */
+export function expandToGroups(objects: SlideObject[], ids: Iterable<string>): Set<string> {
+  const byId = new Map(objects.map((o) => [o.id, o]));
+  const groups = new Set<string>();
+  const out = new Set<string>();
+  for (const id of ids) {
+    out.add(id);
+    const g = byId.get(id)?.groupId;
+    if (g) groups.add(g);
+  }
+  if (groups.size) {
+    for (const o of objects) if (o.groupId && groups.has(o.groupId)) out.add(o.id);
+  }
+  return out;
+}
+
 export interface Delta {
   dx: number;
   dy: number;

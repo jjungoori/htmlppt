@@ -108,3 +108,41 @@ describe('Store + History invariants', () => {
     expect(computeRotate(o, { x: 50, y: 0 }, { x: 52, y: 0 }, 15) % 15).toBe(0); // snapped
   });
 });
+
+describe('grouping (M7)', () => {
+  it('group binds the selection under one shared groupId, undoably', () => {
+    const s = new Store();
+    const a = s.addObject({ html: 'a' });
+    const b = s.addObject({ html: 'b' });
+    s.setSelection([a.id, b.id]);
+    s.group();
+    const gid = s.find(a.id)!.groupId;
+    expect(gid).toBeTruthy();
+    expect(s.find(b.id)!.groupId).toBe(gid);
+    s.history.undo();
+    expect(s.find(a.id)!.groupId).toBeNull();
+  });
+
+  it('selecting one grouped member expands to the whole group', () => {
+    const s = new Store();
+    const a = s.addObject({ html: 'a' });
+    const b = s.addObject({ html: 'b' });
+    const c = s.addObject({ html: 'c' });
+    s.setSelection([a.id, b.id]);
+    s.group();
+    s.setSelection([a.id]);
+    expect(s.selection).toEqual(new Set([a.id, b.id]));
+    expect(s.selection.has(c.id)).toBe(false);
+  });
+
+  it('ungroup clears groupId on every member of the touched groups', () => {
+    const s = new Store();
+    const a = s.addObject({ html: 'a' });
+    const b = s.addObject({ html: 'b' });
+    s.setSelection([a.id, b.id]);
+    s.group();
+    s.ungroup();
+    expect(s.find(a.id)!.groupId).toBeNull();
+    expect(s.find(b.id)!.groupId).toBeNull();
+  });
+});

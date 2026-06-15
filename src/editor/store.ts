@@ -9,11 +9,13 @@ import {
   type ObjectId,
   createDocument,
   createObject,
+  uid,
 } from '../core/model';
 import { History, type Command } from '../core/history';
 import {
   alignDeltas,
   distributeDeltas,
+  expandToGroups,
   reorderZ,
   type AlignEdge,
   type ZOp,
@@ -197,16 +199,43 @@ export class Store {
     this.patchMany(`z-order ${op}`, changes);
   }
 
+  /** Bind selected objects (≥2) under a fresh shared groupId (M7). */
+  group(): void {
+    const objs = this.selectedObjects();
+    if (objs.length < 2) return;
+    const gid = uid('g');
+    const changes = new Map<ObjectId, Partial<SlideObject>>();
+    for (const o of objs) if (o.groupId !== gid) changes.set(o.id, { groupId: gid });
+    this.patchMany('group', changes);
+  }
+
+  /** Clear groupId on every member of the selected objects' groups (M7). */
+  ungroup(): void {
+    const gids = new Set(
+      this.selectedObjects()
+        .map((o) => o.groupId)
+        .filter((g): g is ObjectId => !!g),
+    );
+    if (!gids.size) return;
+    const changes = new Map<ObjectId, Partial<SlideObject>>();
+    for (const o of this.slide.objects) {
+      if (o.groupId && gids.has(o.groupId)) changes.set(o.id, { groupId: null });
+    }
+    this.patchMany('ungroup', changes);
+  }
+
   // ---- selection (not part of undo history) ----
 
   setSelection(ids: ObjectId[]): void {
-    this.selection = new Set(ids);
+    this.selection = expandToGroups(this.slide.objects, ids);
     this.emit('selection');
   }
 
   toggleSelection(id: ObjectId): void {
-    if (this.selection.has(id)) this.selection.delete(id);
-    else this.selection.add(id);
+    const next = new Set(this.selection);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    this.selection = expandToGroups(this.slide.objects, next);
     this.emit('selection');
   }
 
