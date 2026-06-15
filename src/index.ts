@@ -39,6 +39,17 @@ export {
   type SlideTimeline,
   type TimelineEntry,
 } from './core/slideshow';
+export {
+  advance,
+  createPresentation,
+  isAtEnd,
+  isAtStart,
+  retreat,
+  seek,
+  visibleAfter,
+  type AdvanceResult,
+  type PresentationState,
+} from './core/presentation';
 export * as transform from './core/transform';
 export { History } from './core/history';
 export type { Command } from './core/history';
