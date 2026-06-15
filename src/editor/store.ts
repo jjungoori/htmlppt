@@ -7,8 +7,10 @@ import {
   type Slide,
   type SlideObject,
   type ObjectId,
+  type SlideId,
   createDocument,
   createObject,
+  createSlide,
   uid,
 } from '../core/model';
 import { History, type Command } from '../core/history';
@@ -222,6 +224,111 @@ export class Store {
       if (o.groupId && gids.has(o.groupId)) changes.set(o.id, { groupId: null });
     }
     this.patchMany('ungroup', changes);
+  }
+
+  // ---- slide management (M8) ----
+
+  /** Clamp + switch the active slide. Navigation only, not undoable. */
+  setCurrentSlide(index: number): void {
+    const clamped = Math.max(0, Math.min(index, this.doc.slides.length - 1));
+    if (clamped === this.currentSlideIndex) return;
+    this.currentSlideIndex = clamped;
+    this.setSelection([]);
+    this.emit('change');
+  }
+
+  /** Insert a blank slide after `index` (default: after current) and select it. */
+  addSlide(at?: number): Slide {
+    const index = (at ?? this.currentSlideIndex) + 1;
+    const slide = createSlide();
+    const cmd: Command = {
+      label: 'add slide',
+      apply: () => {
+        this.doc.slides.splice(index, 0, slide);
+        this.currentSlideIndex = index;
+      },
+      invert: () => {
+        const i = this.doc.slides.indexOf(slide);
+        if (i >= 0) this.doc.slides.splice(i, 1);
+        this.currentSlideIndex = Math.min(this.currentSlideIndex, this.doc.slides.length - 1);
+      },
+    };
+    this.history.push(cmd);
+    this.setSelection([]);
+    return slide;
+  }
+
+  /** Deep-copy a slide (fresh ids) and insert it right after the source. */
+  duplicateSlide(id?: SlideId): Slide | undefined {
+    const srcIndex =
+      id != null ? this.doc.slides.findIndex((s) => s.id === id) : this.currentSlideIndex;
+    if (srcIndex < 0) return undefined;
+    const src = this.doc.slides[srcIndex];
+    const copy = createSlide({
+      objects: src.objects.map((o) => createObject({ ...o, id: uid('o') })),
+    });
+    const index = srcIndex + 1;
+    const cmd: Command = {
+      label: 'duplicate slide',
+      apply: () => {
+        this.doc.slides.splice(index, 0, copy);
+        this.currentSlideIndex = index;
+      },
+      invert: () => {
+        const i = this.doc.slides.indexOf(copy);
+        if (i >= 0) this.doc.slides.splice(i, 1);
+        this.currentSlideIndex = Math.min(this.currentSlideIndex, this.doc.slides.length - 1);
+      },
+    };
+    this.history.push(cmd);
+    this.setSelection([]);
+    return copy;
+  }
+
+  /** Remove a slide. The document always keeps at least one slide. */
+  removeSlide(id?: SlideId): void {
+    if (this.doc.slides.length <= 1) return;
+    const index =
+      id != null ? this.doc.slides.findIndex((s) => s.id === id) : this.currentSlideIndex;
+    if (index < 0) return;
+    const slide = this.doc.slides[index];
+    const cmd: Command = {
+      label: 'remove slide',
+      apply: () => {
+        this.doc.slides.splice(index, 1);
+        this.currentSlideIndex = Math.min(this.currentSlideIndex, this.doc.slides.length - 1);
+      },
+      invert: () => {
+        this.doc.slides.splice(index, 0, slide);
+        this.currentSlideIndex = index;
+      },
+    };
+    this.history.push(cmd);
+    this.setSelection([]);
+  }
+
+  /** Reorder a slide from `from` to `to` (both clamped). */
+  moveSlide(from: number, to: number): void {
+    const n = this.doc.slides.length;
+    if (from < 0 || from >= n) return;
+    const dest = Math.max(0, Math.min(to, n - 1));
+    if (dest === from) return;
+    const slide = this.doc.slides[from];
+    const cmd: Command = {
+      label: 'move slide',
+      apply: () => {
+        this.doc.slides.splice(from, 1);
+        this.doc.slides.splice(dest, 0, slide);
+        this.currentSlideIndex = dest;
+      },
+      invert: () => {
+        const i = this.doc.slides.indexOf(slide);
+        if (i >= 0) this.doc.slides.splice(i, 1);
+        this.doc.slides.splice(from, 0, slide);
+        this.currentSlideIndex = from;
+      },
+    };
+    this.history.push(cmd);
   }
 
   // ---- selection (not part of undo history) ----
