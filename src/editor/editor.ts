@@ -3,7 +3,14 @@
  * library API. Selection-by-click and keyboard undo/redo are wired here;
  * drag/resize/rotate land in M2–M3.
  */
-import { type SlideDocument } from '../core/model';
+import { type SlideDocument, type SlideObject } from '../core/model';
+import {
+  createShape,
+  createImage,
+  type ShapeKind,
+  type ShapeStyle,
+  type ImageOptions,
+} from '../core/shapes';
 import { aabb, rectsIntersect, unionRect, type Rect } from '../core/transform';
 import { computeResize, computeRotate, type Handle } from '../core/manipulate';
 import { computeSnap } from '../core/snap';
@@ -56,6 +63,16 @@ export class Editor {
   /** Import arbitrary, untouched HTML as a manipulable object. */
   importHTML(html: string, box?: { x?: number; y?: number; w?: number; h?: number }) {
     return this.store.addObject({ html, ...box });
+  }
+
+  /** Add a vector shape (rect/ellipse/triangle/line) as a manipulable object. */
+  addShape(kind: ShapeKind, style?: ShapeStyle, box?: Partial<SlideObject>) {
+    return this.store.addObject(createShape(kind, style, box));
+  }
+
+  /** Add an image (URL or data URI) as a manipulable object. */
+  addImage(src: string, box?: Partial<SlideObject>, opts?: ImageOptions) {
+    return this.store.addObject(createImage(src, box, opts));
   }
 
   toJSON(): SlideDocument {
