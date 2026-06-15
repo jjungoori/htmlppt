@@ -171,6 +171,13 @@ export {
   type Gesture,
 } from './core/gesture';
 export {
+  expandRect,
+  cullObjects,
+  buildSpatialGrid,
+  queryGrid,
+  type SpatialGrid,
+} from './core/culling';
+export {
   objectAriaLabel,
   objectAriaAttrs,
   tabOrder,
