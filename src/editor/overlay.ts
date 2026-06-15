@@ -5,7 +5,7 @@
  * oriented (rotated) with 8 resize handles + a rotate handle; for a
  * multi-selection it falls back to the axis-aligned union box (move only).
  */
-import { aabb, unionRect, type Rect } from '../core/transform';
+import { aabb, cssTransform, unionRect, type Rect } from '../core/transform';
 import { HANDLES } from '../core/manipulate';
 import type { Guide } from '../core/snap';
 import type { SlideObject } from '../core/model';
@@ -74,10 +74,12 @@ export class Overlay {
   renderSelection(): void {
     const sole = this.soleSelection();
     if (sole) {
-      // Oriented box matching the object; handles enabled.
+      // Oriented box matching the object exactly — same size and the same
+      // transform (translate + center rotate + scale) so the box never drifts
+      // from the shape when rotated. transform-origin is 50% 50% (see styles).
       this.box.style.width = `${sole.w}px`;
       this.box.style.height = `${sole.h}px`;
-      this.box.style.transform = `translate(${sole.x}px, ${sole.y}px) rotate(${sole.angle}deg)`;
+      this.box.style.transform = cssTransform(sole);
       this.box.classList.add('sc-has-handles');
       this.box.style.display = 'block';
       return;

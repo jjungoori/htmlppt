@@ -6,27 +6,66 @@ editor.mountSlidePanel(document.getElementById('panel')!);
 editor.mountToolbar(document.getElementById('shellbar')!);
 editor.mountProperties(document.getElementById('props')!);
 
-const samples = [
-  `<h1 style="margin:0;color:#1c7ed6;font:700 32px system-ui">제목 슬라이드</h1>`,
-  `<p style="margin:0;font:16px system-ui">임의의 <b>순수 HTML</b>이 그대로 들어옵니다.</p>`,
-  `<div style="width:100%;height:100%;background:#ffd43b;border-radius:12px"></div>`,
-];
-let i = 0;
+// ── Auto-fit: scale the stage so the whole slide is visible in the canvas ──
+const stage = editor.renderer.stage;
+const canvas = document.getElementById('editor')!;
+function fit() {
+  const pad = 48;
+  const aw = canvas.clientWidth - pad;
+  const ah = canvas.clientHeight - pad;
+  const scale = Math.min(aw / editor.store.doc.width, ah / editor.store.doc.height, 1);
+  stage.style.transform = `scale(${scale})`;
+  stage.style.transformOrigin = 'center center';
+}
+new ResizeObserver(fit).observe(canvas);
+fit();
 
-editor.importHTML(samples[0], { x: 80, y: 60, w: 520, h: 70 });
+// ── A small sample so the editor isn't empty on first load ──
+editor.importSlideHTML(`
+  <div class="slide" style="font-family:system-ui;padding:64px">
+    <h1 style="margin:0 0 16px;font:800 52px system-ui;color:#1c7ed6">SlideCraft</h1>
+    <p style="margin:0;font:400 22px system-ui;color:#495057">
+      AI가 만든 HTML 슬라이드를 <b>진짜 파워포인트처럼</b> 편집하세요.
+    </p>
+    <div style="margin-top:32px;width:240px;height:8px;background:#ffd43b;border-radius:4px"></div>
+  </div>
+`);
+fit();
 
-document.getElementById('add')!.addEventListener('click', () => {
-  i += 1;
-  editor.importHTML(samples[i % samples.length], {
-    x: 100 + (i % 5) * 40,
-    y: 160 + (i % 5) * 40,
-    w: 360,
-    h: 120,
-  });
+// ── Import modal wiring ──
+const back = document.getElementById('import-back')!;
+const ta = document.getElementById('import-html') as HTMLTextAreaElement;
+const openModal = () => { back.classList.add('open'); ta.focus(); };
+const closeModal = () => back.classList.remove('open');
+
+document.getElementById('import')!.addEventListener('click', openModal);
+document.getElementById('import-cancel')!.addEventListener('click', closeModal);
+back.addEventListener('click', (e) => { if (e.target === back) closeModal(); });
+
+document.getElementById('import-go')!.addEventListener('click', () => {
+  const html = ta.value.trim();
+  if (!html) return closeModal();
+  const deckMode = (document.getElementById('mode-deck') as HTMLInputElement).checked;
+  const unwrap = (document.getElementById('import-unwrap') as HTMLInputElement).checked;
+  try {
+    if (deckMode) editor.importDeck(html);
+    else editor.importDocument(html, { unwrap });
+  } catch (err) {
+    // eslint-disable-next-line no-alert
+    alert('가져오기 실패: ' + (err as Error).message);
+    return;
+  }
+  fit();
+  closeModal();
 });
-document.getElementById('undo')!.addEventListener('click', () => editor.undo());
-document.getElementById('redo')!.addEventListener('click', () => editor.redo());
+
+// ── App-bar actions ──
+document.getElementById('present')!.addEventListener('click', () => editor.startSlideshow());
 document.getElementById('save')!.addEventListener('click', () => {
-  // eslint-disable-next-line no-console
-  console.log(JSON.stringify(editor.toJSON(), null, 2));
+  const blob = new Blob([JSON.stringify(editor.toJSON(), null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'slidecraft.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
 });

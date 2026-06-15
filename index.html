@@ -3,33 +3,161 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SlideCraft — dev demo</title>
+    <title>SlideCraft — HTML 슬라이드를 파워포인트처럼</title>
     <style>
-      body { margin: 0; font-family: system-ui, sans-serif; }
-      #toolbar { padding: 8px 12px; background: #212529; color: #fff; display: flex; gap: 8px; align-items: center; }
-      #toolbar button { padding: 4px 10px; cursor: pointer; }
+      :root {
+        --bg: #0f1419;
+        --bar: #1a1f29;
+        --bar2: #232a36;
+        --line: #2c3340;
+        --ink: #e6e9ef;
+        --muted: #8b95a7;
+        --accent: #2684ff;
+        --accent-d: #1c6fe0;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0; display: flex; flex-direction: column; height: 100vh;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: var(--bg); color: var(--ink); overflow: hidden;
+      }
+
+      /* ── Top app bar ─────────────────────────────────────────── */
+      .appbar {
+        flex: none; display: flex; align-items: center; gap: 14px;
+        padding: 0 16px; height: 52px; background: var(--bar);
+        border-bottom: 1px solid var(--line);
+      }
+      .brand { display: flex; align-items: baseline; gap: 8px; font-weight: 700; }
+      .brand .logo { font-size: 17px; letter-spacing: -.3px; }
+      .brand .logo b { color: var(--accent); }
+      .brand .tag { font-size: 11px; color: var(--muted); font-weight: 400; }
+      .appbar .spacer { flex: 1; }
+      .appbar button {
+        height: 32px; padding: 0 12px; border-radius: 7px; cursor: pointer;
+        border: 1px solid var(--line); background: var(--bar2); color: var(--ink);
+        font: 500 13px system-ui; display: inline-flex; align-items: center; gap: 6px;
+        transition: background .12s, border-color .12s;
+      }
+      .appbar button:hover { background: #2c3340; border-color: #3a4252; }
+      .appbar button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+      .appbar button.primary:hover { background: var(--accent-d); }
+      .appbar .hint { font-size: 11px; color: var(--muted); }
+
+      /* ── Workspace 3-pane ────────────────────────────────────── */
       #shellbar { flex: none; }
-      #workspace { display: flex; height: calc(100vh - 84px); }
-      #panel { width: 200px; flex: none; }
-      #editor { flex: 1; min-width: 0; height: 100%; }
-      #props { width: 200px; flex: none; height: 100%; overflow-y: auto; }
+      .workspace { flex: 1; display: flex; min-height: 0; }
+      .pane { display: flex; flex-direction: column; min-height: 0; background: var(--bar); }
+      .pane-head {
+        flex: none; padding: 9px 12px; font: 600 11px system-ui; letter-spacing: .4px;
+        text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line);
+        display: flex; align-items: center; justify-content: space-between;
+      }
+      #panel-pane { width: 220px; flex: none; border-right: 1px solid var(--line); }
+      #panel { flex: 1; min-height: 0; }
+      #props-pane { width: 230px; flex: none; border-left: 1px solid var(--line); }
+      #props { flex: 1; min-height: 0; overflow-y: auto; }
+
+      /* Canvas area: center the stage on a soft backdrop */
+      #stage-pane { flex: 1; min-width: 0; }
+      #editor {
+        flex: 1; min-height: 0; min-width: 0;
+        background:
+          radial-gradient(circle at 50% 40%, #1c2330, #0f1419 70%);
+      }
+      /* Override the library's stage chrome to suit the dark shell */
+      #editor .sc-host { background: transparent; display: grid; place-items: center; overflow: hidden; }
+      #editor .sc-stage { box-shadow: 0 8px 40px rgba(0,0,0,.5); border-radius: 4px; }
+
+      /* ── Import modal ────────────────────────────────────────── */
+      .modal-back {
+        position: fixed; inset: 0; background: rgba(8,11,16,.66);
+        display: none; align-items: center; justify-content: center; z-index: 9999;
+        backdrop-filter: blur(2px);
+      }
+      .modal-back.open { display: flex; }
+      .modal {
+        width: min(720px, 92vw); max-height: 86vh; display: flex; flex-direction: column;
+        background: var(--bar); border: 1px solid var(--line); border-radius: 12px;
+        box-shadow: 0 24px 80px rgba(0,0,0,.6); overflow: hidden;
+      }
+      .modal h2 { margin: 0; padding: 16px 20px; font-size: 15px; border-bottom: 1px solid var(--line); }
+      .modal .body { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; overflow: auto; }
+      .modal p { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+      .modal textarea {
+        width: 100%; min-height: 240px; resize: vertical; padding: 12px;
+        font: 12.5px ui-monospace, "SF Mono", Menlo, monospace; line-height: 1.5;
+        color: var(--ink); background: #0d1117; border: 1px solid var(--line); border-radius: 8px;
+      }
+      .modal .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+      .modal label { font-size: 12.5px; color: var(--ink); display: flex; align-items: center; gap: 6px; }
+      .modal .foot {
+        padding: 12px 20px; display: flex; justify-content: flex-end; gap: 8px;
+        border-top: 1px solid var(--line);
+      }
+      .modal button {
+        height: 34px; padding: 0 16px; border-radius: 8px; cursor: pointer;
+        font: 600 13px system-ui; border: 1px solid var(--line);
+        background: var(--bar2); color: var(--ink);
+      }
+      .modal button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+      .modal button.primary:hover { background: var(--accent-d); }
+      .modal .ghost { color: var(--muted); }
     </style>
   </head>
   <body>
-    <div id="toolbar">
-      <strong>SlideCraft</strong>
-      <button id="add">+ HTML 객체</button>
-      <button id="undo">Undo</button>
-      <button id="redo">Redo</button>
-      <button id="save">toJSON → console</button>
-      <span style="opacity:.7">클릭=선택, Shift+클릭=다중, Del=삭제, Ctrl+Z/Y</span>
-    </div>
+    <header class="appbar">
+      <div class="brand">
+        <span class="logo">Slide<b>Craft</b></span>
+        <span class="tag">HTML 슬라이드를 파워포인트처럼 편집</span>
+      </div>
+      <div class="spacer"></div>
+      <span class="hint">더블클릭=텍스트 편집 · 드래그=이동 · 모서리=크기 · 상단 핸들=회전 · Ctrl+Z/Y</span>
+      <button id="present">▶ 발표 (F5)</button>
+      <button id="save">⤓ JSON</button>
+      <button id="import" class="primary">＋ AI 슬라이드 가져오기</button>
+    </header>
+
     <div id="shellbar"></div>
-    <div id="workspace">
-      <div id="panel"></div>
-      <div id="editor"></div>
-      <div id="props"></div>
+
+    <div class="workspace">
+      <section class="pane" id="panel-pane">
+        <div class="pane-head">슬라이드</div>
+        <div id="panel"></div>
+      </section>
+      <section class="pane" id="stage-pane">
+        <div id="editor"></div>
+      </section>
+      <section class="pane" id="props-pane">
+        <div class="pane-head">속성</div>
+        <div id="props"></div>
+      </section>
     </div>
+
+    <!-- Import modal -->
+    <div class="modal-back" id="import-back">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="import-title">
+        <h2 id="import-title">AI 슬라이드 HTML 가져오기</h2>
+        <div class="body">
+          <p>
+            AI가 만든 슬라이드 HTML을 붙여넣으세요. 각 요소(제목·문단·이미지·도형)가
+            <b>개별 편집 객체</b>로 들어와 파워포인트처럼 직접 조작할 수 있습니다.
+          </p>
+          <textarea id="import-html" placeholder="<div class=&quot;slide&quot;>&#10;  <h1>제목</h1>&#10;  <p>본문 내용…</p>&#10;</div>" spellcheck="false"></textarea>
+          <div class="row">
+            <label><input type="checkbox" id="import-unwrap" checked /> 래퍼 풀기 (한 컨테이너를 자식 블록으로 분해)</label>
+            <label><input type="radio" name="impmode" id="mode-slide" checked /> 현재 슬라이드에 추가</label>
+            <label><input type="radio" name="impmode" id="mode-deck" /> 덱 전체 교체</label>
+          </div>
+        </div>
+        <div class="foot">
+          <button class="ghost" id="import-cancel">취소</button>
+          <button class="primary" id="import-go">가져오기</button>
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

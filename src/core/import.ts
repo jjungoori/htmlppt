@@ -21,6 +21,14 @@ export interface ImportLayout {
   padding?: number;
   /** Gap between cells, px. Default 24. */
   gap?: number;
+  /**
+   * Decompose a single wrapping element into its children so an AI-generated
+   * slide — typically one `<div class="slide">…</div>` holding everything — is
+   * imported as several independently editable objects rather than one block.
+   * Descends through single-child wrappers until reaching an element with two or
+   * more element children. Default false (top-level split only).
+   */
+  unwrap?: boolean;
 }
 
 /**
@@ -72,11 +80,32 @@ export function extractTopLevel(html: string): string[] {
   return Array.from(parsed.body.children).map((el) => el.outerHTML);
 }
 
+/**
+ * Find the "content root" of a parsed document: descend from `<body>` through
+ * any chain of single-element wrappers until reaching an element that holds two
+ * or more element children, then return that element's children's outerHTML. If
+ * the body already has multiple top-level elements, those are returned as-is.
+ * Browser-only: requires a global `DOMParser`.
+ */
+export function extractBlocks(html: string): string[] {
+  if (typeof DOMParser === 'undefined') {
+    throw new Error('extractBlocks requires a DOM environment (DOMParser).');
+  }
+  const parsed = new DOMParser().parseFromString(html, 'text/html');
+  let node: Element = parsed.body;
+  // Descend while there is exactly one element child that itself has children.
+  while (node.children.length === 1 && node.children[0].children.length > 0) {
+    node = node.children[0];
+  }
+  return Array.from(node.children).map((el) => el.outerHTML);
+}
+
 /** Split arbitrary HTML into positioned init payloads (extract + place). */
 export function importHTMLDocument(
   html: string,
   doc: SlideDocument,
   layout?: ImportLayout,
 ): ObjectInit[] {
-  return placeImports(extractTopLevel(html), doc, layout);
+  const fragments = layout?.unwrap ? extractBlocks(html) : extractTopLevel(html);
+  return placeImports(fragments, doc, layout);
 }

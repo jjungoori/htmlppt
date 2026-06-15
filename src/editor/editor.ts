@@ -56,6 +56,7 @@ import { Toolbar, type ToolbarOptions } from './toolbar';
 import { PropertyPanel } from './properties';
 import { Slideshow, type SlideshowOptions } from './slideshow';
 import { importHTMLDocument, type ImportLayout } from '../core/import';
+import { importDeckDocument } from '../core/import-deck';
 import { ensureBaseCss } from './styles';
 
 export interface EditorOptions {
@@ -86,10 +87,17 @@ export class Editor {
   /** Id of the object currently in inline text-edit, or null. */
   private editingId: string | null = null;
 
-  /** Pointer position in slide-space coordinates. */
+  /**
+   * Pointer position in slide-space coordinates. Divides by the stage's actual
+   * rendered scale (rect size vs. layout size) so direct manipulation stays
+   * correct even when the host CSS-scales the stage to fit (e.g. demo auto-fit).
+   */
   private toStage(e: PointerEvent): { x: number; y: number } {
-    const r = this.renderer.stage.getBoundingClientRect();
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
+    const stage = this.renderer.stage;
+    const r = stage.getBoundingClientRect();
+    const sx = stage.offsetWidth ? r.width / stage.offsetWidth : 1;
+    const sy = stage.offsetHeight ? r.height / stage.offsetHeight : 1;
+    return { x: (e.clientX - r.left) / (sx || 1), y: (e.clientY - r.top) / (sy || 1) };
   }
 
   /** Ids of objects whose AABB intersects a slide-space rect. */
@@ -114,6 +122,43 @@ export class Editor {
     const objs = this.store.addObjects(importHTMLDocument(html, this.store.doc, layout));
     if (objs.length) this.store.setSelection(objs.map((o) => o.id));
     return objs;
+  }
+
+  /**
+   * Import an AI-generated HTML slide as editable objects — the headline use
+   * case. Unwraps a single wrapping container (e.g. `<div class="slide">…</div>`)
+   * into its child blocks so each heading/paragraph/image becomes an
+   * independently movable, resizable, editable object, just like PowerPoint.
+   * Markup is left untouched. One undo entry; the new objects become selection.
+   */
+  importSlideHTML(html: string, layout?: ImportLayout): SlideObject[] {
+    return this.importDocument(html, { unwrap: true, ...layout });
+  }
+
+  /**
+   * Load a full multi-slide deck (SlideCraft-exported HTML or a page of slide
+   * sections) — replaces the current document. Returns this editor for chaining.
+   */
+  importDeck(html: string): this {
+    this.store.fromJSON(importDeckDocument(html));
+    return this;
+  }
+
+  /** Append a new blank slide after `at` (default: after current) and show it. */
+  addSlide(at?: number) {
+    return this.store.addSlide(at);
+  }
+  /** Duplicate a slide by id (default: current) and show the copy. */
+  duplicateSlide(id?: string) {
+    return this.store.duplicateSlide(id);
+  }
+  /** Remove a slide by id (default: current). Keeps at least one slide. */
+  removeSlide(id?: string): void {
+    this.store.removeSlide(id);
+  }
+  /** Switch the visible slide by index. */
+  setCurrentSlide(index: number): void {
+    this.store.setCurrentSlide(index);
   }
 
   /** Add a vector shape (rect/ellipse/triangle/line) as a manipulable object. */

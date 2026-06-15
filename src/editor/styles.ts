@@ -21,7 +21,7 @@ export const BASE_CSS = `
   transform-origin: 0 0;
 }
 .sc-overlay > * { position: absolute; top: 0; left: 0; box-sizing: border-box; }
-.sc-selbox { border: 1.5px solid #2684ff; transform-origin: 0 0; }
+.sc-selbox { border: 1.5px solid #2684ff; transform-origin: 50% 50%; }
 .sc-marquee { border: 1px solid #2684ff; background: rgba(38,132,255,.12); }
 .sc-handle, .sc-rotate { position: absolute; pointer-events: auto; }
 .sc-handle {
