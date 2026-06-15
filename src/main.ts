@@ -59,6 +59,30 @@ document.getElementById('import-go')!.addEventListener('click', () => {
   closeModal();
 });
 
+// ── Open an HTML file → import it directly ──
+const fileInput = document.getElementById('file-input') as HTMLInputElement;
+document.getElementById('open-file')!.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', async () => {
+  const file = fileInput.files?.[0];
+  if (!file) return;
+  const html = await file.text();
+  try {
+    // A SlideCraft-exported deck (or a page of slide <section>s) loads as a full
+    // deck; anything else becomes editable objects on a fresh slide.
+    if (/data-sc-(slide|deck|object)/.test(html) || /<section[^>]*class="[^"]*sc-slide/.test(html)) {
+      editor.importDeck(html);
+    } else {
+      editor.addSlide();
+      editor.importSlideHTML(html);
+    }
+  } catch (err) {
+    // eslint-disable-next-line no-alert
+    alert('파일 가져오기 실패: ' + (err as Error).message);
+  }
+  fileInput.value = ''; // allow re-selecting the same file
+  fit();
+});
+
 // ── App-bar actions ──
 document.getElementById('present')!.addEventListener('click', () => editor.startSlideshow());
 document.getElementById('save')!.addEventListener('click', () => {

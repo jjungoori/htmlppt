@@ -654,6 +654,12 @@ export class Editor {
         this.startSlideshow();
         return;
       }
+      // F2 or Enter edits the selected text object, just like PowerPoint.
+      if ((e.key === 'F2' || e.key === 'Enter') && this.store.selection.size === 1) {
+        e.preventDefault();
+        this.editSelection();
+        return;
+      }
       const meta = e.ctrlKey || e.metaKey;
       if (meta && e.key.toLowerCase() === 'z' && !e.shiftKey) {
         e.preventDefault();

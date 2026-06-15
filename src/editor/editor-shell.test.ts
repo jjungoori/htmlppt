@@ -97,6 +97,36 @@ describe('M15 editor shell — property panel', () => {
   });
 });
 
+describe('text editing — double-click / F2 (PowerPoint-style)', () => {
+  const dblclick = (node: HTMLElement) =>
+    node.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, clientX: 0, clientY: 0 }));
+
+  it('double-clicking a text object makes its content editable and commits edits', () => {
+    const { editor } = mount();
+    const o = editor.importHTML('<h1>old</h1>', { x: 0, y: 0, w: 200, h: 80 })!;
+    const node = editor.renderer.nodeFor(o.id)!;
+    const content = node.querySelector('.sc-content') as HTMLElement;
+
+    dblclick(node);
+    expect(content.contentEditable).toBe('true');
+    expect(node.classList.contains('sc-editing')).toBe(true);
+
+    content.innerHTML = '<h1>new</h1>';
+    content.dispatchEvent(new FocusEvent('blur'));
+    expect(editor.store.find(o.id)!.html).toBe('<h1>new</h1>');
+    expect(content.contentEditable).toBe('false');
+  });
+
+  it('does not enter edit on a locked object', () => {
+    const { editor } = mount();
+    const o = editor.importHTML('<p>x</p>')!;
+    editor.store.patch(o.id, { locked: true });
+    const node = editor.renderer.nodeFor(o.id)!;
+    dblclick(node);
+    expect((node.querySelector('.sc-content') as HTMLElement).contentEditable).not.toBe('true');
+  });
+});
+
 describe('M15 export/import roundtrip stays lossless', () => {
   it('objects added via toolbar survive an export → import roundtrip', () => {
     const { editor } = mount();
