@@ -14,6 +14,7 @@ export {
   importHTMLDocument,
   type ImportLayout,
 } from './core/import';
+export { exportHTML, type ExportOptions } from './core/export';
 export {
   BUILTIN_THEMES,
   DEFAULT_THEME,
