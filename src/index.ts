@@ -170,6 +170,15 @@ export {
   applyGesture,
   type Gesture,
 } from './core/gesture';
+export {
+  objectAriaLabel,
+  objectAriaAttrs,
+  tabOrder,
+  tabNavigate,
+  spatialNavigate,
+  type AriaAttrs,
+  type NavDirection,
+} from './core/a11y';
 export * as transform from './core/transform';
 export { History } from './core/history';
 export type { Command } from './core/history';

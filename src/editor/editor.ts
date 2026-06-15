@@ -541,20 +541,29 @@ export class Editor {
     stage.addEventListener('pointerup', onUp);
   }
 
-  /** Double-click an object to edit its HTML content inline (M5). */
+  /**
+   * Double-click an object to edit its text inline, PowerPoint-style (M5). The
+   * caret is placed where the user double-clicked when the browser supports it.
+   */
   private wireTextEdit(): void {
     this.renderer.stage.addEventListener('dblclick', (e) => {
       const target = (e.target as HTMLElement).closest('.sc-object') as HTMLElement | null;
       if (!target) return;
       const o = this.store.find(target.dataset.id!);
-      if (o && !o.locked) this.enterEdit(o.id);
+      if (o && !o.locked) this.enterEdit(o.id, e);
     });
+  }
+
+  /** Begin inline text edit on the sole-selected object, if any (F2 / Enter). */
+  editSelection(): void {
+    const sole = this.overlay.soleSelection();
+    if (sole && !sole.locked) this.enterEdit(sole.id);
   }
 
   /** Cached teardown for the active edit session, set by enterEdit. */
   private editFinish: ((commit: boolean) => void) | null = null;
 
-  private enterEdit(id: string): void {
+  private enterEdit(id: string, at?: MouseEvent): void {
     if (this.editingId) this.commitEdit();
     const node = this.renderer.nodeFor(id);
     const content = node?.querySelector('.sc-content') as HTMLElement | null;
@@ -565,6 +574,7 @@ export class Editor {
     node.classList.add('sc-editing');
     content.contentEditable = 'true';
     content.focus();
+    this.placeCaret(content, at);
 
     const finish = (commit: boolean): void => {
       if (this.editingId !== id) return;
@@ -599,6 +609,41 @@ export class Editor {
   /** Commit the in-progress edit, if any. */
   private commitEdit(): void {
     this.editFinish?.(true);
+  }
+
+  /**
+   * Put the caret where the user double-clicked (PowerPoint feel). Falls back to
+   * placing it at the end of the content when the point can't be resolved or no
+   * event was given (e.g. F2). Best-effort and guarded for non-DOM/test envs.
+   */
+  private placeCaret(content: HTMLElement, at?: MouseEvent): void {
+    const sel = typeof window !== 'undefined' ? window.getSelection?.() : null;
+    if (!sel) return;
+    const doc = content.ownerDocument as Document & {
+      caretRangeFromPoint?: (x: number, y: number) => Range | null;
+      caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
+    };
+    let range: Range | null = null;
+    if (at) {
+      if (doc.caretRangeFromPoint) {
+        range = doc.caretRangeFromPoint(at.clientX, at.clientY);
+      } else if (doc.caretPositionFromPoint) {
+        const pos = doc.caretPositionFromPoint(at.clientX, at.clientY);
+        if (pos) {
+          range = doc.createRange();
+          range.setStart(pos.offsetNode, pos.offset);
+        }
+      }
+    }
+    if (!range || !content.contains(range.startContainer)) {
+      range = doc.createRange();
+      range.selectNodeContents(content);
+      range.collapse(false); // caret at the end
+    } else {
+      range.collapse(true);
+    }
+    sel.removeAllRanges();
+    sel.addRange(range);
   }
 
   private wireKeyboard(): void {
